@@ -21,6 +21,7 @@ import { Button, Card } from "@/src/components/ui";
 import { api, Assessment, Profile } from "@/src/api";
 import { generateReportHtml } from "@/src/report";
 import { useI18n } from "@/src/i18n";
+import { useAuth } from "@/src/auth";
 
 const COMPONENT_KEYS = ["psychology", "rom", "strength_lsi", "functional_lsi", "sport_specific"];
 
@@ -28,6 +29,7 @@ export default function Results() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, isRTL } = useI18n();
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [a, setA] = useState<Assessment | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -126,6 +128,19 @@ export default function Results() {
             style={{ width: "100%" }}
           />
           {shareMsg ? <Text style={styles.shareMsg} testID="share-msg">{shareMsg}</Text> : null}
+          <Pressable
+            testID="ask-coach-button"
+            onPress={() => router.push(user?.is_pro ? `/chat/${a.assessment_id}` : "/upgrade")}
+            style={styles.coachBtn}
+          >
+            <Ionicons name="sparkles" size={18} color={colors.onBrandPrimary} />
+            <Text style={styles.coachText}>{t("chat.title")}</Text>
+            {!user?.is_pro ? (
+              <View style={styles.coachPro}><Text style={styles.coachProText}>{t("pro.badge")}</Text></View>
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color={colors.onBrandPrimary} />
+            )}
+          </Pressable>
         </Card>
 
         {/* Radar */}
@@ -262,6 +277,13 @@ const styles = StyleSheet.create({
   adviceBox: { borderWidth: 1, borderRadius: radius.md, padding: spacing.md, width: "100%" },
   adviceText: { fontFamily: fonts.textSemi, fontSize: 14, textAlign: "center" },
   shareMsg: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 12, textAlign: "center" },
+  coachBtn: {
+    flexDirection: "row", alignItems: "center", gap: spacing.sm, width: "100%",
+    backgroundColor: colors.brandSecondary, borderRadius: radius.md, height: 52, paddingHorizontal: spacing.lg,
+  },
+  coachText: { flex: 1, color: colors.onBrandPrimary, fontFamily: fonts.textSemi, fontSize: 15 },
+  coachPro: { backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
+  coachProText: { color: colors.brandPrimary, fontFamily: fonts.textSemi, fontSize: 11, letterSpacing: 1 },
   sectionTitle: { color: colors.onSurface, fontFamily: fonts.displaySemi, fontSize: 19 },
   compRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
   compLabel: { color: colors.onSurfaceSecondary, fontFamily: fonts.textMedium, fontSize: 13 },

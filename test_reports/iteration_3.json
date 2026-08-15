@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 3 validated the new Premium/Pro tier: PUT /api/auth/pro toggle, Pro-gated AI Coach chat (POST/GET /api/assessments/{id}/chat), top-level retest_date persistence, and the Library/Calendar Pro-gated tabs + Upgrade paywall. Backend: 41/41 pytest tests passed (100%) — full previous suite (29) still green, plus 12 new premium tests in /app/backend/tests/test_premium.py covering: default is_pro=false on register, PUT /auth/pro toggles on/off and reflects in /auth/me, POST chat returns 403 for non-pro, POST chat returns messages array with user+assistant roles when pro, GET chat returns persisted history sorted chronologically, 404 on unknown assessment, 401 without auth, top-level retest_date present on POST /assessments and in GET list. Frontend E2E on 390x844: registered a fresh non-pro account through the UI (email+password + role=Атлет + 'Создать аккаунт'), landed on Athletes tab with 4-tab layout (Атлеты / Библиотека / Календарь / Профиль). Tapped Библиотека → rendered library-locked ProLocked screen with library-locked-cta button; tapping the CTA routed to /upgrade showing PRO badge, title 'ShoulderReady Pro', 4 feature rows, price line and activate-pro-button. Pressing activate-pro-button flipped is_pro=true and returned to previous screen; Библиотека then rendered 6 category chips (lib-cat-all + 5 categories) and 8 exercise-{key} cards, tapping the first card opened the exercise detail screen with hero image, sets/target chips and 'Как выполнять' instructions. Календарь unlocked with empty-state 'Нет запланированных ретестов' (correct: new account has no assessments yet). All pro-gating and paywall flows work as designed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "global", "issues": [
+        "Carry-over from iteration_2: 'shadow*' style props deprecated (should be boxShadow on web) and IBMPlexSans .ttf assets 404/decode-error (served as HTML by unstable_path), causing system-font fallback. Non-blocking for functionality."
+      ]},
+      {"screen": "upgrade.tsx", "issues": [
+        "Minor: activate() reads stale user?.is_pro to decide router.back() AFTER awaiting setPro(). Because the useAuth() state has already updated after await, the branch `if (!user?.is_pro) router.back();` still works only because React closure captured the pre-update value; if setPro is refactored to sync state via a different mechanism this could silently break. Recommend using the argument that was passed to setPro (isPro=!user?.is_pro before call) or a local const to decide navigation."
+      ]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_i18n_keys.py",
+    "/app/backend/tests/test_premium.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional/minor) In /app/frontend/app/upgrade.tsx activate(), capture the new pro value in a local const before await setPro() and use it to decide navigation rather than reading potentially stale user?.is_pro.",
+    "(Carry-over) Migrate deprecated RN-Web style props (shadow* → boxShadow, props.pointerEvents → style.pointerEvents) and fix IBMPlexSans font MIME/bundling — cosmetic only."
+  ],
+  "critical_code_review_comments": [
+    "PUT /api/auth/pro correctly persists is_pro on user doc and _public_user returns bool(is_pro) — GET /auth/me reflects it (verified live).",
+    "POST /api/assessments/{id}/chat correctly gates on user.is_pro (403 for non-pro) BEFORE hitting the LLM — good ordering, no wasted LLM calls.",
+    "GET /api/assessments/{id}/chat is intentionally NOT pro-gated (allows non-pro users to view historical/empty history without paying) — reasonable UX choice; documented in tests.",
+    "chat_messages are keyed by (assessment_id, owner_id) so cross-user access is naturally prevented via _load_assessment_for_owner ownership check before insert/read.",
+    "POST /api/assessments now stores top-level retest_date (from roadmap.retest_date) — confirmed in fixture and in list projection (list excludes 'raw' and 'roadmap' but keeps retest_date). Older assessments without top-level retest_date are handled gracefully by Calendar (parseRetest returns null → item filtered out).",
+    "AI Coach LLM prompt is well-scoped: passes RTS score, zone, sport, all 5 components and weak_links summary as system context; uses last 10 messages of history transcript; language enforced by lang_name map — good.",
+    "Frontend ProLocked component correctly gates Library/Calendar behind user?.is_pro and links to /upgrade via testID library-locked-cta / calendar-locked-cta.",
+    "results/[id].tsx routes ask-coach-button to /upgrade when not pro and /chat/{id} when pro — matches product spec.",
+    "MongoDB _id continues to be stripped on all endpoints (chat GET/POST, assessments list/get)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_premium.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "12 nonpro_* users + 12 TEST_PremProfile profiles + several assessments and chat_messages created by /app/backend/tests/test_premium.py. UI test also created one uipro_<ts>@example.com account (now Pro=true). All test data prefixed for easy cleanup; no production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Full pytest suite runs in ~80s (AI calls dominate): `python -m pytest /app/backend/tests/ -v`. Premium-specific tests are in /app/backend/tests/test_premium.py. Key frontend testIDs for premium flow: library-locked, library-locked-cta, calendar-locked, calendar-locked-cta, activate-pro-button, upgrade-close, ask-coach-button, tab-library/tab-calendar (not present — tab bar uses inner labels), lib-cat-{all|rotator|scapula|mobility|stability|power}, exercise-{key}. To test non-pro flow always register a fresh account (default is_pro=false). demo_coach@example.com is currently is_pro=true; toggle via PUT /api/auth/pro {is_pro:false} to reset.",
+  "rca_of_issue": "No blocking issues found. Pro-gating is applied in three complementary places: (1) backend POST /api/assessments/{id}/chat returns 403 unless user.is_pro=true, (2) Library/Calendar screens render ProLocked when !user?.is_pro, (3) results screen ask-coach-button routes to /upgrade for non-pro users. AI reply verified to return a non-empty assistant message when pro is active. Top-level retest_date is now populated at assessment creation time from roadmap.retest_date and preserved in both list and detail responses."
+}

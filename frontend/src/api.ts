@@ -72,7 +72,10 @@ export type User = {
   name: string;
   role: "athlete" | "trainer";
   picture?: string | null;
+  is_pro?: boolean;
 };
+
+export type ChatMessage = { role: "user" | "assistant"; content: string; created_at?: string };
 
 export type Profile = {
   profile_id: string;
@@ -102,6 +105,7 @@ export type Assessment = {
   radar: { axis: string; value: number; key?: string }[];
   weak_links: { name: string; lsi: number | null; deficit: number | null; type: string; key?: string }[];
   detail_lsi: Record<string, number>;
+  retest_date?: string;
   roadmap: {
     summary: string;
     exercises: { title: string; description: string; target: string }[];

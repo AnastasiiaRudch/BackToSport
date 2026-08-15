@@ -1,43 +1,36 @@
 # PRD — ShoulderReady: Pro RTS Analytics
 
 ## Original Problem Statement
-Клиническая AI-платформа оценки готовности плеча к возврату в контактный/высоконагруженный спорт (борьба, регби, кроссфит, метательные) после операции/травмы. Пошаговый научно обоснованный протокол из 5 блоков, расчёт LSI и итогового RTS Score, интерактивный дашборд (круговой индикатор, радар, слабые звенья, AI-план), медицинский дисклеймер.
+Клиническая AI-платформа оценки готовности плеча к возврату в контактный/высоконагруженный спорт после операции/травмы. 5-блочный протокол, LSI + взвешенный RTS Score, дашборд (gauge, радар, слабые звенья, AI-план), мед. дисклеймер.
 
 ## User Choices
 - Auth: email/пароль + Google (Emergent-managed)
-- AI: авто-план реабилитации на GPT-5.4
-- Инструкции: только текстовые
-- Пользователи: атлет и тренер/физио (роли)
-- Дизайн: тёмная спортивная тема, неон lime #ccff00
+- AI: план реабилитации + AI-чат (GPT-5.4)
+- Роли: атлет и тренер/физио
+- Дизайн: тёмная спортивная (неон lime #ccff00), премиальная глубина/анимации
+- Языки: RU / UK / EN / HE (RTL)
+- Премиум: тариф Pro (демо-UI без оплат)
 
 ## Architecture
-- **Backend**: FastAPI + MongoDB (motor). Unified session tokens in `user_sessions` (email/pw + Google). Scoring engine (LSI + weighted RTS). AI roadmap via emergentintegrations LlmChat (gpt-5.4).
-- **Frontend**: Expo SDK 54 + expo-router. AuthContext, bottom tabs (Атлеты/История/Профиль), athlete detail, 5-block wizard, results dashboard. Custom SVG Gauge + Radar (react-native-svg). Fonts: Rajdhani + IBM Plex Sans. Keyboard via react-native-keyboard-controller.
+- Backend: FastAPI + Mongo. Auth (JWT + Google session, is_pro flag). Scoring engine (LSI, RTS, stable keys). AI roadmap + AI coach chat (emergentintegrations gpt-5.4, язык по выбору). chat_messages collection.
+- Frontend: Expo SDK 54 + expo-router. i18n (4 языка, RTL). Tabs: Атлеты / Библиотека / Календарь / Профиль. Custom SVG Gauge/Radar/ProgressChart. Pro-гейтинг. reanimated анимации.
 
-## User Personas
-- Атлет: ведёт свой один профиль, проходит оценки, видит план.
-- Тренер/физио: управляет несколькими профилями атлетов, запускает и сравнивает оценки.
-
-## Core Requirements (static)
-- 5 блоков теста с корректными весами (15/15/25/25/20).
-- LSI = оперированная/здоровая × 100; RTS Score 0-100 с зонами green/yellow/red.
-- Дашборд: круговой gauge, 5-осевой радар, слабые звенья (LSI<90%), AI-план (3 упражнения + дата ретеста), дисклеймер.
-
-## Implemented (2026-08-15)
-- ✅ Auth: register/login/me/logout/role + Google session exchange
-- ✅ Профили атлетов CRUD с последним RTS/зоной
-- ✅ Мастер тестирования из 5 блоков (SIRSI слайдеры, ROM/сила/функц. степперы + LSI-подсказки, apprehension toggle, спорт-слайдеры)
-- ✅ Scoring engine + AI-план (GPT-5.4, ai_generated=true), fallback-план
-- ✅ Дашборд результатов: gauge, радар, компоненты, слабые звенья, roadmap, ER/IR ratio, дисклеймер
-- ✅ История тестов, роли атлет/тренер
-- ✅ 22/22 backend тестов + полный frontend E2E пройдены
+## Implemented (as of 2026-08-15)
+- ✅ Auth (email+Google), роли, профили атлетов CRUD
+- ✅ 5-блочный мастер, scoring engine, AI-план, дашборд (gauge/radar/weak links/roadmap/ER-IR)
+- ✅ История, график динамики RTS, сравнение двух тестов
+- ✅ PDF-отчёт для врача (expo-print/sharing), локализованный + RTL
+- ✅ Мультиязычность RU/UK/EN/HE с RTL, AI на выбранном языке
+- ✅ ПРЕМИУМ: тариф Pro (PUT /auth/pro), AI-чат «Спроси реабилитолога», Библиотека упражнений (8 шт), Календарь ретестов, Upgrade-экран
+- ✅ Тесты: 41/41 backend + E2E премиум-флоу пройдены
 
 ## Backlog / Remaining
-- P1: Графики прогресса RTS во времени по атлету
-- P1: Экспорт/шаринг PDF-отчёта для врача
-- P2: Текст+видео инструкции к тестам
-- P2: Напоминания о дате ретеста
-- P2: Сравнение двух оценок бок-о-бок
+- P1: Реальная монетизация (RevenueCat) вместо демо-Pro
+- P1: Напоминания push о ретесте (нужна сборка)
+- P2: Дашборд тренера с рейтингом атлетов
+- P2: Видео/анимации (Lottie) в библиотеке
+- P2: Автоопределение языка устройства
+- P2: Брендирование клиники в PDF
 
-## Next Tasks
-- По запросу пользователя: прогресс-графики, шаринг отчёта, инструкции к тестам.
+## Test Accounts
+- demo_coach@example.com / Passw0rd!23 (trainer, is_pro=true)

@@ -51,6 +51,21 @@ export default function ProfileScreen() {
         <Text style={styles.email}>{user?.email}</Text>
       </View>
 
+      <Pressable
+        testID="pro-card"
+        onPress={() => router.push("/upgrade")}
+        style={[styles.proCard, user?.is_pro && styles.proCardActive]}
+      >
+        <View style={styles.proIcon}>
+          <Ionicons name={user?.is_pro ? "star" : "star-outline"} size={22} color={colors.onBrandPrimary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.proTitle}>{user?.is_pro ? t("pro.active") : t("pro.title")}</Text>
+          <Text style={styles.proSub}>{user?.is_pro ? t("pro.manage") : t("pro.subtitle")}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.onSurface} />
+      </Pressable>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("profile.language")}</Text>
         <View style={styles.langGrid}>
@@ -139,6 +154,15 @@ const styles = StyleSheet.create({
   },
   name: { color: colors.onSurface, fontFamily: fonts.displaySemi, fontSize: 22 },
   email: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 14 },
+  proCard: {
+    flexDirection: "row", alignItems: "center", gap: spacing.md,
+    backgroundColor: colors.surfaceTertiary, borderRadius: radius.lg, padding: spacing.lg,
+    borderWidth: 1, borderColor: colors.borderStrong,
+  },
+  proCardActive: { borderColor: colors.brandPrimary },
+  proIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.brandPrimary, alignItems: "center", justifyContent: "center" },
+  proTitle: { color: colors.onSurface, fontFamily: fonts.displaySemi, fontSize: 17 },
+  proSub: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 13, marginTop: 1 },
   section: { gap: spacing.sm },
   sectionTitle: { color: colors.onSurfaceSecondary, fontFamily: fonts.textMedium, fontSize: 13 },
   roleRow: { flexDirection: "row", gap: spacing.sm },

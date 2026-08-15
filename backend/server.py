@@ -402,6 +402,7 @@ def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
         "name": user["name"],
         "role": user.get("role", "athlete"),
         "picture": user.get("picture"),
+        "is_pro": bool(user.get("is_pro", False)),
     }
 
 
@@ -420,6 +421,7 @@ async def register(inp: RegisterInput):
         "password_hash": hash_password(inp.password),
         "picture": None,
         "auth_provider": "email",
+        "is_pro": False,
         "created_at": now_utc(),
     }
     await db.users.insert_one(user_doc)
@@ -462,6 +464,7 @@ async def auth_session(inp: SessionInput):
             "password_hash": None,
             "picture": picture,
             "auth_provider": "google",
+            "is_pro": False,
             "created_at": now_utc(),
         }
         await db.users.insert_one(user)
@@ -493,6 +496,113 @@ async def set_role(inp: RoleInput, user: Dict[str, Any] = Depends(get_current_us
     await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"role": role}})
     user["role"] = role
     return {"user": _public_user(user)}
+
+
+class ProInput(BaseModel):
+    is_pro: bool = True
+
+
+@api_router.put("/auth/pro")
+async def set_pro(inp: ProInput, user: Dict[str, Any] = Depends(get_current_user)):
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"is_pro": bool(inp.is_pro)}})
+    user["is_pro"] = bool(inp.is_pro)
+    return {"user": _public_user(user)}
+
+
+# ----------------------------- AI Coach Chat -----------------------------
+class ChatInput(BaseModel):
+    message: str
+    lang: str = "ru"
+
+
+async def _load_assessment_for_owner(assessment_id: str, owner_id: str) -> Dict[str, Any]:
+    it = await db.assessments.find_one({"assessment_id": assessment_id, "owner_id": owner_id}, {"_id": 0})
+    if not it:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    return it
+
+
+@api_router.get("/assessments/{assessment_id}/chat")
+async def get_chat(assessment_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+    await _load_assessment_for_owner(assessment_id, user["user_id"])
+    msgs = await db.chat_messages.find(
+        {"assessment_id": assessment_id, "owner_id": user["user_id"]}, {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    for m in msgs:
+        if isinstance(m.get("created_at"), datetime):
+            m["created_at"] = m["created_at"].isoformat()
+    return {"messages": msgs}
+
+
+@api_router.post("/assessments/{assessment_id}/chat")
+async def post_chat(assessment_id: str, inp: ChatInput, user: Dict[str, Any] = Depends(get_current_user)):
+    if not user.get("is_pro"):
+        raise HTTPException(status_code=403, detail="Pro feature")
+    a = await _load_assessment_for_owner(assessment_id, user["user_id"])
+
+    now = now_utc()
+    await db.chat_messages.insert_one({
+        "assessment_id": assessment_id, "owner_id": user["user_id"],
+        "role": "user", "content": inp.message.strip(), "created_at": now,
+    })
+
+    prior = await db.chat_messages.find(
+        {"assessment_id": assessment_id, "owner_id": user["user_id"]}, {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+
+    reply = await _chat_llm(a, prior, inp.lang)
+
+    await db.chat_messages.insert_one({
+        "assessment_id": assessment_id, "owner_id": user["user_id"],
+        "role": "assistant", "content": reply, "created_at": now_utc(),
+    })
+
+    msgs = await db.chat_messages.find(
+        {"assessment_id": assessment_id, "owner_id": user["user_id"]}, {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    for m in msgs:
+        if isinstance(m.get("created_at"), datetime):
+            m["created_at"] = m["created_at"].isoformat()
+    return {"messages": msgs}
+
+
+async def _chat_llm(a: Dict[str, Any], history: List[Dict[str, Any]], lang: str) -> str:
+    lang = lang if lang in ("ru", "uk", "en", "he") else "ru"
+    lang_name = {"ru": "русском", "uk": "украинском", "en": "английском", "he": "иврите"}[lang]
+    if not EMERGENT_LLM_KEY:
+        return {"ru": "AI-чат временно недоступен.", "uk": "AI-чат тимчасово недоступний.",
+                "en": "AI chat is temporarily unavailable.", "he": "צ'אט ה-AI אינו זמין כרגע."}[lang]
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        comp = a.get("components", {})
+        weak = ", ".join([w.get("name", "") for w in a.get("weak_links", [])]) or "нет"
+        transcript = "\n".join(
+            [f"{'Атлет' if m['role'] == 'user' else 'Реабилитолог'}: {m['content']}" for m in history[-10:]]
+        )
+        system = (
+            "Ты — опытный спортивный реабилитолог и физиотерапевт. Ведёшь консультацию по результатам теста "
+            "готовности плеча к возврату в спорт. Отвечай кратко (2-5 предложений), практично и безопасно, "
+            "давай конкретные рекомендации по упражнениям и прогрессии нагрузки. Если вопрос требует очного осмотра "
+            "или есть тревожные симптомы (боль, нестабильность) — обязательно порекомендуй обратиться к врачу. "
+            f"Пиши на {lang_name} языке. Не выдумывай факты, опирайся на приведённые данные теста.\n"
+            f"Данные теста: RTS {a.get('rts_score')}% (зона {a.get('zone')}); спорт {a.get('sport')}; "
+            f"компоненты: психология {comp.get('psychology')}%, мобильность {comp.get('rom')}%, "
+            f"сила {comp.get('strength_lsi')}%, функц. {comp.get('functional_lsi')}%, спец. {comp.get('sport_specific')}%; "
+            f"слабые звенья: {weak}."
+        )
+        last_user = history[-1]["content"] if history else ""
+        prompt = (f"Контекст диалога:\n{transcript}\n\nОтветь на последний вопрос атлета: {last_user}"
+                  if len(history) > 1 else last_user)
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=new_id("coach"),
+                       system_message=system).with_model("openai", "gpt-5.4")
+        resp = await chat.send_message(UserMessage(text=prompt))
+        return resp if isinstance(resp, str) else str(resp)
+    except Exception as e:
+        logger.warning(f"chat llm failed: {e}")
+        return {"ru": "Не удалось получить ответ. Попробуйте ещё раз.",
+                "uk": "Не вдалося отримати відповідь. Спробуйте ще раз.",
+                "en": "Could not get a response. Please try again.",
+                "he": "לא התקבלה תשובה. נסה שוב."}[lang]
 
 
 # ----------------------------- Profile Routes -----------------------------
@@ -570,6 +680,7 @@ async def create_assessment(inp: AssessmentInput, user: Dict[str, Any] = Depends
         "weak_links": scores["weak_links"],
         "detail_lsi": scores["detail_lsi"],
         "roadmap": roadmap,
+        "retest_date": roadmap.get("retest_date"),
         "created_at": now_utc(),
     }
     await db.assessments.insert_one(dict(doc))

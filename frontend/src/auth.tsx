@@ -26,6 +26,7 @@ type AuthState = {
   loginGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   setRole: (role: string) => Promise<void>;
+  setPro: (isPro: boolean) => Promise<void>;
   refresh: () => Promise<void>;
 };
 
@@ -189,6 +190,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(res.user);
   };
 
+  const setPro = async (isPro: boolean) => {
+    const res = await api.put<{ user: User }>("/auth/pro", { is_pro: isPro });
+    setUser(res.user);
+  };
+
   const refresh = async () => {
     try {
       const res = await api.get<{ user: User }>("/auth/me");
@@ -206,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginGoogle,
         logout,
         setRole,
+        setPro,
         refresh,
       }}
     >

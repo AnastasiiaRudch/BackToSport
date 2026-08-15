@@ -56,6 +56,9 @@ export default function RootLayout() {
                 <Stack.Screen name="assessment/[profileId]" />
                 <Stack.Screen name="compare/[profileId]" />
                 <Stack.Screen name="results/[id]" />
+                <Stack.Screen name="chat/[id]" />
+                <Stack.Screen name="exercise/[key]" />
+                <Stack.Screen name="upgrade" options={{ presentation: "modal" }} />
               </Stack>
             </AuthProvider>
           </I18nProvider>

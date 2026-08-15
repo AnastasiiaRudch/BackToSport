@@ -33,14 +33,24 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="library"
         options={{
-          title: t("tabs.history"),
+          title: t("nav.library"),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
+            <Ionicons name="barbell" size={size} color={color} />
           ),
         }}
       />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: t("nav.calendar"),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen name="history" options={{ href: null }} />
       <Tabs.Screen
         name="profile"
         options={{

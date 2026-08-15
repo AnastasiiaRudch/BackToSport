@@ -11,6 +11,7 @@ import {
   TextInput,
   TextInputProps,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { colors, spacing, radius, fonts } from "@/src/theme";
 
@@ -166,6 +167,31 @@ export function Divider() {
   return <View style={styles.divider} />;
 }
 
+export function ProLocked({
+  title,
+  text,
+  cta,
+  onPress,
+  testID,
+}: {
+  title: string;
+  text: string;
+  cta: string;
+  onPress: () => void;
+  testID?: string;
+}) {
+  return (
+    <View style={styles.locked} testID={testID}>
+      <View style={styles.lockedIcon}>
+        <Ionicons name="lock-closed" size={30} color={colors.brandPrimary} />
+      </View>
+      <Text style={styles.lockedTitle}>{title}</Text>
+      <Text style={styles.lockedText}>{text}</Text>
+      <Button title={cta} onPress={onPress} testID={testID ? `${testID}-cta` : "unlock-pro"} style={{ marginTop: spacing.md, minWidth: 220 }} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceSecondary,
@@ -239,4 +265,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.divider,
     marginVertical: spacing.md,
   },
+  locked: { alignItems: "center", padding: spacing.xl, gap: spacing.sm },
+  lockedIcon: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: colors.brandTertiary,
+    alignItems: "center", justifyContent: "center", marginBottom: spacing.sm,
+  },
+  lockedTitle: { color: colors.onSurface, fontFamily: fonts.displaySemi, fontSize: 22, textAlign: "center" },
+  lockedText: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 14, textAlign: "center", paddingHorizontal: spacing.lg },
 });
