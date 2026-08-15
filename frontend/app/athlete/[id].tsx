@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
@@ -13,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { colors, spacing, radius, fonts, zoneColor, zoneLabel } from "@/src/theme";
 import { Button } from "@/src/components/ui";
+import { ProgressChart, ProgressPoint } from "@/src/components/ProgressChart";
 import { api, Profile, Assessment } from "@/src/api";
 
 function fmtDate(iso: string) {
@@ -21,6 +23,17 @@ function fmtDate(iso: string) {
       day: "2-digit",
       month: "short",
       year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function fmtShort(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
     });
   } catch {
     return iso;
@@ -39,6 +52,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export default function AthleteDetail() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [items, setItems] = useState<Assessment[]>([]);
@@ -135,6 +149,25 @@ export default function AthleteDetail() {
           icon={<Ionicons name="play" size={18} color={colors.onBrandPrimary} />}
           onPress={() => router.push(`/assessment/${id}`)}
         />
+
+        {items.length >= 2 && (
+          <View style={styles.chartCard}>
+            <Text style={styles.sectionTitle}>Динамика RTS Score</Text>
+            <Text style={styles.chartSub}>Прогресс по датам ретестов</Text>
+            <View style={{ marginTop: spacing.md }}>
+              <ProgressChart
+                width={width - spacing.lg * 2 - spacing.lg * 2}
+                data={[...items]
+                  .reverse()
+                  .map<ProgressPoint>((it) => ({
+                    value: it.rts_score,
+                    zone: it.zone,
+                    label: fmtShort(it.created_at),
+                  }))}
+              />
+            </View>
+          </View>
+        )}
 
         <View>
           <Text style={styles.sectionTitle}>История оценок</Text>
@@ -234,6 +267,14 @@ const styles = StyleSheet.create({
   infoLabel: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 14 },
   infoValue: { color: colors.onSurface, fontFamily: fonts.textSemi, fontSize: 14 },
   sectionTitle: { color: colors.onSurface, fontFamily: fonts.displaySemi, fontSize: 20 },
+  chartCard: {
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chartSub: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 13, marginTop: 2 },
   emptyText: { color: colors.onSurfaceTertiary, fontFamily: fonts.textRegular, fontSize: 14, marginTop: spacing.sm },
   histCard: {
     backgroundColor: colors.surfaceSecondary,
