@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, radius, fonts } from "@/src/theme";
 import { Button, Field } from "@/src/components/ui";
 import { api } from "@/src/api";
-import { SPORTS, SURGERY_TYPES } from "@/src/constants";
+import { useI18n, SPORT_KEYS, SURGERY_KEYS } from "@/src/i18n";
 
 function Segment({
   options,
@@ -43,11 +43,13 @@ function ChipGroup({
   options,
   value,
   onChange,
+  labelFor,
   testID,
 }: {
   options: string[];
   value: string;
   onChange: (v: string) => void;
+  labelFor: (v: string) => string;
   testID?: string;
 }) {
   return (
@@ -58,7 +60,7 @@ function ChipGroup({
           onPress={() => onChange(o)}
           style={[styles.chip, value === o && styles.chipActive]}
         >
-          <Text style={[styles.chipText, value === o && styles.chipTextActive]}>{o}</Text>
+          <Text style={[styles.chipText, value === o && styles.chipTextActive]}>{labelFor(o)}</Text>
         </Pressable>
       ))}
     </View>
@@ -68,13 +70,14 @@ function ChipGroup({
 export default function NewProfile() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useI18n();
 
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("male");
-  const [sport, setSport] = useState(SPORTS[0]);
+  const [sport, setSport] = useState(SPORT_KEYS[0]);
   const [weight, setWeight] = useState("");
-  const [surgery, setSurgery] = useState(SURGERY_TYPES[0]);
+  const [surgery, setSurgery] = useState(SURGERY_KEYS[0]);
   const [weeks, setWeeks] = useState("");
   const [dominant, setDominant] = useState("right");
   const [operated, setOperated] = useState("right");
@@ -84,7 +87,7 @@ export default function NewProfile() {
   const save = async () => {
     setError(null);
     if (!name || !age || !weeks) {
-      setError("Заполните имя, возраст и срок после операции");
+      setError(t("np.fill"));
       return;
     }
     setSaving(true);
@@ -102,7 +105,7 @@ export default function NewProfile() {
       });
       router.back();
     } catch (e: any) {
-      setError(e?.message || "Ошибка сохранения");
+      setError(e?.message || "Error");
     } finally {
       setSaving(false);
     }
@@ -114,7 +117,7 @@ export default function NewProfile() {
         <Pressable testID="close-new-profile" onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="close" size={26} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>Новый атлет</Text>
+        <Text style={styles.headerTitle}>{t("np.title")}</Text>
         <View style={{ width: 26 }} />
       </View>
 
@@ -123,71 +126,71 @@ export default function NewProfile() {
         bottomOffset={90}
         showsVerticalScrollIndicator={false}
       >
-        <Field testID="np-name" label="Имя атлета" placeholder="Иван Петров" value={name} onChangeText={setName} />
+        <Field testID="np-name" label={t("np.name")} placeholder={t("np.namePh")} value={name} onChangeText={setName} />
 
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Field testID="np-age" label="Возраст" placeholder="24" keyboardType="numeric" value={age} onChangeText={setAge} />
+            <Field testID="np-age" label={t("np.age")} placeholder={t("np.agePh")} keyboardType="numeric" value={age} onChangeText={setAge} />
           </View>
           <View style={{ flex: 1 }}>
-            <Field testID="np-weight" label="Вес. категория" placeholder="напр. 74 кг" value={weight} onChangeText={setWeight} />
+            <Field testID="np-weight" label={t("np.weight")} placeholder={t("np.weightPh")} value={weight} onChangeText={setWeight} />
           </View>
         </View>
 
         <View style={{ gap: spacing.xs }}>
-          <Text style={styles.label}>Пол</Text>
+          <Text style={styles.label}>{t("np.sex")}</Text>
           <Segment
             testID="np-sex"
             value={sex}
             onChange={setSex}
             options={[
-              { key: "male", label: "Мужской" },
-              { key: "female", label: "Женский" },
+              { key: "male", label: t("common.male") },
+              { key: "female", label: t("common.female") },
             ]}
           />
         </View>
 
         <View style={{ gap: spacing.xs }}>
-          <Text style={styles.label}>Вид спорта</Text>
-          <ChipGroup testID="np-sport" options={SPORTS} value={sport} onChange={setSport} />
+          <Text style={styles.label}>{t("np.sport")}</Text>
+          <ChipGroup testID="np-sport" options={SPORT_KEYS} value={sport} onChange={setSport} labelFor={(k) => t(`sport.${k}`)} />
         </View>
 
         <View style={{ gap: spacing.xs }}>
-          <Text style={styles.label}>Тип операции / травмы</Text>
-          <ChipGroup testID="np-surgery" options={SURGERY_TYPES} value={surgery} onChange={setSurgery} />
+          <Text style={styles.label}>{t("np.surgery")}</Text>
+          <ChipGroup testID="np-surgery" options={SURGERY_KEYS} value={surgery} onChange={setSurgery} labelFor={(k) => t(`surgery.${k}`)} />
         </View>
 
         <Field
           testID="np-weeks"
-          label="Срок после операции (недель)"
-          placeholder="напр. 16"
+          label={t("np.weeks")}
+          placeholder={t("np.weeksPh")}
           keyboardType="numeric"
           value={weeks}
           onChangeText={setWeeks}
         />
 
         <View style={{ gap: spacing.xs }}>
-          <Text style={styles.label}>Доминантная рука</Text>
+          <Text style={styles.label}>{t("np.dominant")}</Text>
           <Segment
             testID="np-dominant"
             value={dominant}
             onChange={setDominant}
             options={[
-              { key: "left", label: "Левая" },
-              { key: "right", label: "Правая" },
+              { key: "left", label: t("common.left") },
+              { key: "right", label: t("common.right") },
             ]}
           />
         </View>
 
         <View style={{ gap: spacing.xs }}>
-          <Text style={styles.label}>Оперированная рука</Text>
+          <Text style={styles.label}>{t("np.operated")}</Text>
           <Segment
             testID="np-operated"
             value={operated}
             onChange={setOperated}
             options={[
-              { key: "left", label: "Левая" },
-              { key: "right", label: "Правая" },
+              { key: "left", label: t("common.left") },
+              { key: "right", label: t("common.right") },
             ]}
           />
         </View>
@@ -197,7 +200,7 @@ export default function NewProfile() {
 
       <KeyboardStickyView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Button testID="save-profile-button" title="Сохранить атлета" onPress={save} loading={saving} />
+          <Button testID="save-profile-button" title={t("np.save")} onPress={save} loading={saving} />
         </View>
       </KeyboardStickyView>
     </View>

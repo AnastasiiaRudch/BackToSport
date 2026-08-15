@@ -14,30 +14,20 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
-import { colors, spacing, radius, fonts, zoneColor, zoneLabel } from "@/src/theme";
+import { colors, spacing, radius, fonts, zoneColor } from "@/src/theme";
 import { Gauge } from "@/src/components/Gauge";
 import { Radar } from "@/src/components/Radar";
 import { Button, Card } from "@/src/components/ui";
 import { api, Assessment, Profile } from "@/src/api";
 import { generateReportHtml } from "@/src/report";
+import { useI18n } from "@/src/i18n";
 
-const ZONE_ADVICE: Record<string, string> = {
-  green: "Полный допуск к контакту и соревнованиям.",
-  yellow: "Модифицированные тренировки, дриллы и спарринги с ограничениями.",
-  red: "Возврат в контакт запрещён. Продолжайте изолированную реабилитацию.",
-};
-
-const COMPONENT_LABELS: [string, string][] = [
-  ["psychology", "Психология (SIRSI)"],
-  ["rom", "Мобильность (ROM)"],
-  ["strength_lsi", "Сила (LSI)"],
-  ["functional_lsi", "Функциональность (LSI)"],
-  ["sport_specific", "Спорт-специфика"],
-];
+const COMPONENT_KEYS = ["psychology", "rom", "strength_lsi", "functional_lsi", "sport_specific"];
 
 export default function Results() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t, lang, isRTL } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [a, setA] = useState<Assessment | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -67,22 +57,22 @@ export default function Results() {
     setSharing(true);
     try {
       if (Platform.OS === "web") {
-        setShareMsg("Экспорт PDF доступен в мобильном приложении (Expo Go / сборка).");
+        setShareMsg(t("results.shareWeb"));
         return;
       }
-      const html = generateReportHtml(a, profile);
+      const html = generateReportHtml(a, profile, { t, lang, isRTL });
       const { uri } = await Print.printToFileAsync({ html });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
           mimeType: "application/pdf",
-          dialogTitle: "Отчёт RTS для врача",
+          dialogTitle: t("results.share"),
           UTI: "com.adobe.pdf",
         });
       } else {
-        setShareMsg("Отправка недоступна на этом устройстве.");
+        setShareMsg(t("results.shareUnavail"));
       }
     } catch (e) {
-      setShareMsg("Не удалось сформировать отчёт. Попробуйте ещё раз.");
+      setShareMsg(t("results.shareFail"));
     } finally {
       setSharing(false);
     }
@@ -124,11 +114,11 @@ export default function Results() {
         <Card style={styles.gaugeCard}>
           <Gauge score={a.rts_score} zone={a.zone} />
           <View style={[styles.adviceBox, { borderColor: zc }]}>
-            <Text style={[styles.adviceText, { color: zc }]}>{ZONE_ADVICE[a.zone]}</Text>
+            <Text style={[styles.adviceText, { color: zc }]}>{t(`zoneAdvice.${a.zone}`)}</Text>
           </View>
           <Button
             testID="share-report-button"
-            title="Отчёт для врача (PDF)"
+            title={t("results.share")}
             variant="secondary"
             loading={sharing}
             onPress={shareReport}
@@ -140,22 +130,22 @@ export default function Results() {
 
         {/* Radar */}
         <Card>
-          <Text style={styles.sectionTitle}>Профиль баланса</Text>
+          <Text style={styles.sectionTitle}>{t("results.balance")}</Text>
           <View style={{ alignItems: "center", marginTop: spacing.sm }}>
-            <Radar data={a.radar} />
+            <Radar data={a.radar.map((r) => ({ ...r, axis: r.key ? t(`axis.${r.key}`) : r.axis }))} />
           </View>
         </Card>
 
         {/* Components */}
         <Card>
-          <Text style={styles.sectionTitle}>Компоненты скора</Text>
+          <Text style={styles.sectionTitle}>{t("results.components")}</Text>
           <View style={{ marginTop: spacing.md, gap: spacing.md }}>
-            {COMPONENT_LABELS.map(([key, label]) => {
+            {COMPONENT_KEYS.map((key) => {
               const val = a.components[key] ?? 0;
               return (
                 <View key={key}>
                   <View style={styles.compRow}>
-                    <Text style={styles.compLabel}>{label}</Text>
+                    <Text style={styles.compLabel}>{t(`comp.${key}`)}</Text>
                     <Text style={styles.compVal}>{Math.round(val)}%</Text>
                   </View>
                   <View style={styles.barTrack}>
@@ -175,9 +165,9 @@ export default function Results() {
           </View>
           {a.er_ir_ratio?.operated != null && (
             <View style={styles.ratioRow}>
-              <Text style={styles.ratioLabel}>ER/IR Ratio (норма ~0.66-0.75)</Text>
+              <Text style={styles.ratioLabel}>{t("results.ratio")}</Text>
               <Text style={styles.ratioVal}>
-                Опер. {a.er_ir_ratio.operated} · Здор. {a.er_ir_ratio.healthy ?? "—"}
+                {t("results.ratioOp")} {a.er_ir_ratio.operated} · {t("results.ratioHe")} {a.er_ir_ratio.healthy ?? "—"}
               </Text>
             </View>
           )}
@@ -185,22 +175,22 @@ export default function Results() {
 
         {/* Weak links */}
         <Card>
-          <Text style={styles.sectionTitle}>Слабые звенья</Text>
+          <Text style={styles.sectionTitle}>{t("results.weakLinks")}</Text>
           {a.weak_links.length === 0 ? (
             <View style={styles.noWeak}>
               <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-              <Text style={styles.noWeakText}>Критических дефицитов не выявлено (LSI ≥ 90%).</Text>
+              <Text style={styles.noWeakText}>{t("results.noWeak")}</Text>
             </View>
           ) : (
             <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
               {a.weak_links.map((w, i) => (
                 <View key={i} style={styles.weakRow}>
                   <Ionicons name="alert-circle" size={18} color={colors.error} />
-                  <Text style={styles.weakName}>{w.name}</Text>
+                  <Text style={styles.weakName}>{w.key ? t(`weak.${w.key}`) : w.name}</Text>
                   {w.deficit != null ? (
                     <Text style={styles.weakDeficit}>−{Math.round(w.deficit)}%</Text>
                   ) : (
-                    <Text style={styles.weakFlag}>риск</Text>
+                    <Text style={styles.weakFlag}>{t("results.risk")}</Text>
                   )}
                 </View>
               ))}
@@ -211,7 +201,7 @@ export default function Results() {
         {/* Roadmap */}
         <Card>
           <View style={styles.roadmapHead}>
-            <Text style={styles.sectionTitle}>План действий (2–4 недели)</Text>
+            <Text style={styles.sectionTitle}>{t("results.roadmap")}</Text>
             {a.roadmap.ai_generated ? (
               <View style={styles.aiBadge}>
                 <Ionicons name="sparkles" size={12} color={colors.onBrandPrimary} />
@@ -229,7 +219,7 @@ export default function Results() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.exTitle}>{ex.title}</Text>
                   <Text style={styles.exDesc}>{ex.description}</Text>
-                  {ex.target ? <Text style={styles.exTarget}>Цель: {ex.target}</Text> : null}
+                  {ex.target ? <Text style={styles.exTarget}>{ex.target}</Text> : null}
                 </View>
               </View>
             ))}
@@ -237,7 +227,7 @@ export default function Results() {
           <View style={styles.retestRow}>
             <Ionicons name="calendar" size={18} color={colors.brandPrimary} />
             <Text style={styles.retestText}>
-              Повторный тест: <Text style={styles.retestDate}>{a.roadmap.retest_date}</Text>
+              {t("results.retest")} <Text style={styles.retestDate}>{a.roadmap.retest_date}</Text>
             </Text>
           </View>
         </Card>
@@ -246,8 +236,7 @@ export default function Results() {
         <View style={styles.disclaimer}>
           <Ionicons name="medical" size={16} color={colors.warning} />
           <Text style={styles.disclaimerText}>
-            Отчёт носит скрининговый характер. Окончательное решение о возврате в спорт
-            принимает лечащий спортивный врач или хирург на очной консультации.
+            {t("results.disclaimer")}
           </Text>
         </View>
       </ScrollView>

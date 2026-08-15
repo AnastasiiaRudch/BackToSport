@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { colors, spacing, radius, fonts } from "@/src/theme";
 import { Button, Field } from "@/src/components/ui";
 import { useAuth } from "@/src/auth";
+import { useI18n } from "@/src/i18n";
 
 const HERO =
   "https://images.unsplash.com/photo-1711025372958-db48a4fe0ba1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwxfHxuZW9uJTIwZ3JlZW4lMjBmaXRuZXNzJTIwYWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODY3ODYyNzh8MA&ixlib=rb-4.1.0&q=85";
@@ -24,6 +25,7 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { loginEmail, registerEmail, loginGoogle } = useAuth();
+  const { t } = useI18n();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -37,7 +39,7 @@ export default function AuthScreen() {
   const submit = async () => {
     setError(null);
     if (!email || !password || (mode === "register" && !name)) {
-      setError("Заполните все поля");
+      setError(t("auth.fillAll"));
       return;
     }
     setLoading(true);
@@ -94,7 +96,7 @@ export default function AuthScreen() {
         </View>
 
         <Text style={styles.headline}>
-          Оценка готовности плеча к возврату в спорт
+          {t("auth.headline")}
         </Text>
 
         <View style={styles.segment}>
@@ -104,7 +106,7 @@ export default function AuthScreen() {
             style={[styles.segBtn, mode === "login" && styles.segBtnActive]}
           >
             <Text style={[styles.segText, mode === "login" && styles.segTextActive]}>
-              Вход
+              {t("auth.login")}
             </Text>
           </Pressable>
           <Pressable
@@ -113,7 +115,7 @@ export default function AuthScreen() {
             style={[styles.segBtn, mode === "register" && styles.segBtnActive]}
           >
             <Text style={[styles.segText, mode === "register" && styles.segTextActive]}>
-              Регистрация
+              {t("auth.register")}
             </Text>
           </Pressable>
         </View>
@@ -122,15 +124,15 @@ export default function AuthScreen() {
           {mode === "register" && (
             <Field
               testID="input-name"
-              label="Имя"
-              placeholder="Ваше имя"
+              label={t("common.name")}
+              placeholder={t("auth.namePh")}
               value={name}
               onChangeText={setName}
             />
           )}
           <Field
             testID="input-email"
-            label="Email"
+            label={t("common.email")}
             placeholder="you@example.com"
             autoCapitalize="none"
             keyboardType="email-address"
@@ -139,7 +141,7 @@ export default function AuthScreen() {
           />
           <Field
             testID="input-password"
-            label="Пароль"
+            label={t("common.password")}
             placeholder="••••••••"
             secureTextEntry
             value={password}
@@ -148,7 +150,7 @@ export default function AuthScreen() {
 
           {mode === "register" && (
             <View style={{ gap: spacing.xs }}>
-              <Text style={styles.roleLabel}>Роль</Text>
+              <Text style={styles.roleLabel}>{t("auth.roleLabel")}</Text>
               <View style={styles.roleRow}>
                 {(["athlete", "trainer"] as const).map((r) => (
                   <Pressable
@@ -165,7 +167,7 @@ export default function AuthScreen() {
                     <Text
                       style={[styles.roleText, role === r && styles.roleTextActive]}
                     >
-                      {r === "athlete" ? "Атлет" : "Тренер / физио"}
+                      {t(`role.${r}`)}
                     </Text>
                   </Pressable>
                 ))}
@@ -181,14 +183,14 @@ export default function AuthScreen() {
 
           <Button
             testID="submit-button"
-            title={mode === "login" ? "Войти" : "Создать аккаунт"}
+            title={mode === "login" ? t("auth.loginBtn") : t("auth.createAccount")}
             onPress={submit}
             loading={loading}
           />
 
           <View style={styles.orRow}>
             <View style={styles.orLine} />
-            <Text style={styles.orText}>или</Text>
+            <Text style={styles.orText}>{t("common.or")}</Text>
             <View style={styles.orLine} />
           </View>
 
@@ -203,7 +205,7 @@ export default function AuthScreen() {
             ) : (
               <>
                 <Ionicons name="logo-google" size={18} color={colors.onSurface} />
-                <Text style={styles.googleText}>Продолжить с Google</Text>
+                <Text style={styles.googleText}>{t("auth.google")}</Text>
               </>
             )}
           </Pressable>

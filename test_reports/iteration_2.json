@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 2 focused on the new i18n feature (RU/UK/EN/HE + RTL Hebrew) plus regressions on scoring, radar/weak-links keys, and lang-aware AI roadmap. Backend: 29/29 pytest tests passed (100%) — full previous suite (22) still green, plus 7 new tests for radar keys (psychology/mobility/strength/stability/power), weak_links keys (ash_i/ash_y/ash_t/er_str/ir_str/apprehension + type/deficit invariants), GET assessment key preservation, and lang param producing English/Hebrew/Russian roadmap.summary via GPT-5.4 (all ai_generated=true). Frontend E2E on 390x844 mobile viewport: logged in as demo_coach@example.com, opened Profile tab — all four testIDs lang-ru/lang-uk/lang-en/lang-he render as chips with flag/label/active checkmark, click on lang-en instantly retranslates tabs (Athletes/History/Profile) + screen labels (Language/Role/Athlete/Coach/Log out) + disclaimer; navigation to Athletes and back to Profile keeps English (in-session persistence OK); switching to lang-he renders Hebrew (RTL characters present) across the whole UI.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "profile (web reload)", "issues": ["After a hard browser reload the app returns to /auth (session_token lost) and falls back to lang=ru even if user had chosen HE/EN before. Root cause is that expo-secure-store on web-preview does not persist through a hard refresh; on Expo Go / native builds SecureStore is durable, so this is a web-only artifact. Non-blocking. If persistence on web matters, back the `storage` util with AsyncStorage/localStorage on web only."]},
+      {"screen": "global", "issues": ["Existing console warnings persist (unrelated to this iteration): 'shadow*' style props deprecated (use boxShadow), 'props.pointerEvents' deprecated, and IBMPlexSans .ttf served as HTML by unstable_path so fonts fail to decode (system font fallback)."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_i18n_keys.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional/web-only) If i18n persistence across a hard browser reload is a requirement for the web preview, wrap `storage` to use localStorage on web while keeping SecureStore on native — LANG_KEY (`app_lang`) currently lives in secure-store which does not survive web reloads.",
+    "(Carry-over/minor from iteration_1) Migrate deprecated RN-Web style props (shadow* → boxShadow, props.pointerEvents → style.pointerEvents) and fix IBMPlexSans font MIME/bundling."
+  ],
+  "critical_code_review_comments": [
+    "Scoring engine unchanged and correct: weighting 15/15/25/25/20 verified by test_weighting_formula; zone thresholds (>=90 green, >=75 yellow, <75 red) verified.",
+    "Radar array now exposes {key, axis, value} with keys {psychology, mobility, strength, stability, power} exactly matching t('axis.*') in i18n.tsx — enables client-side localization without breaking legacy `axis` field.",
+    "weak_links entries now carry stable `key` (flexion, abduction, er_rom, ir_rom, ash_i/y/t, er_str, ir_str, ckcuest, ybt, mbt, apprehension, low_sirsi, breakfall, static_pp, sparring) aligned with i18n `weak.*` keys — good.",
+    "AssessmentInput.lang defaults to 'ru' and is validated against the fallback map before being passed to the LLM prompt; unknown languages silently fall back to ru (safe).",
+    "Fallback roadmap dictionaries provide localized text for all 4 languages so a missing EMERGENT_LLM_KEY / AI failure still returns lang-consistent output.",
+    "MongoDB _id continues to be stripped correctly on all endpoints.",
+    "I18nProvider guards on `ready` and reads `app_lang` from storage on mount; RTL applied via I18nManager.forceRTL for `he`."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_i18n_keys.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Multiple TEST_I18N_* users/profiles created by pytest (via /api/auth/register and /api/profiles) and a demo_coach session was reused. No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Base URL comes from EXPO_PUBLIC_BACKEND_URL in /app/frontend/.env. Full pytest suite: `python -m pytest /app/backend/tests/ -v` — 29 tests, ~90s (AI calls dominate). i18n tests live in /app/backend/tests/test_i18n_keys.py and detect language by Cyrillic/Hebrew character-range checks on roadmap.summary. Frontend language switcher testIDs: lang-ru, lang-uk, lang-en, lang-he on the Profile tab. Storage key = `app_lang` via `/app/frontend/src/utils/storage.ts` (SecureStore-backed). Only functional gap detected is that hard browser reload on the web preview loses the language (SecureStore is not durable on web) — not a bug in i18n code itself.",
+  "rca_of_issue": "No blocking issues. i18n changes are backwards compatible: radar/weak_links get new `key` fields without dropping the existing `axis`/`name`/`lsi` fields, and `lang` defaults to 'ru' when omitted. Roadmap correctly localizes via LLM (verified live: EN summary is Latin-only, HE summary contains Hebrew block chars, RU contains Cyrillic)."
+}

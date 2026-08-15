@@ -15,44 +15,44 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, radius, fonts } from "@/src/theme";
 import { Button, Stepper, Card } from "@/src/components/ui";
 import { api } from "@/src/api";
-import { SIRSI_QUESTIONS } from "@/src/constants";
+import { useI18n } from "@/src/i18n";
 
 type Side = { operated: number; healthy: number };
 
 const BLOCKS = [
-  { key: "intro", title: "Протокол RTS", weight: "" },
-  { key: "psych", title: "1 · Психология", weight: "15%" },
-  { key: "rom", title: "2 · ROM & Apprehension", weight: "15%" },
-  { key: "strength", title: "3 · Силовой профиль (LSI)", weight: "25%" },
-  { key: "functional", title: "4 · Функц. и плиометрика", weight: "25%" },
-  { key: "sport", title: "5 · Спорт-специфика", weight: "20%" },
+  { key: "intro", weight: "" },
+  { key: "psych", weight: "15%" },
+  { key: "rom", weight: "15%" },
+  { key: "strength", weight: "25%" },
+  { key: "functional", weight: "25%" },
+  { key: "sport", weight: "20%" },
 ];
 
 const ROM_METRICS = [
-  { key: "rom_flexion", label: "Сгибание", suffix: "°", step: 5, def: 150 },
-  { key: "rom_abduction", label: "Отведение", suffix: "°", step: 5, def: 150 },
-  { key: "rom_external_rotation", label: "Наружная ротация", suffix: "°", step: 5, def: 80 },
-  { key: "rom_internal_rotation", label: "Внутренняя ротация", suffix: "°", step: 5, def: 60 },
+  { key: "rom_flexion", tkey: "flexion", unit: "deg", step: 5, def: 150 },
+  { key: "rom_abduction", tkey: "abduction", unit: "deg", step: 5, def: 150 },
+  { key: "rom_external_rotation", tkey: "er_rom", unit: "deg", step: 5, def: 80 },
+  { key: "rom_internal_rotation", tkey: "ir_rom", unit: "deg", step: 5, def: 60 },
 ];
 
 const STRENGTH_METRICS = [
-  { key: "ash_i", label: "ASH тест — позиция I", suffix: "кг", step: 0.5, def: 20 },
-  { key: "ash_y", label: "ASH тест — позиция Y", suffix: "кг", step: 0.5, def: 16 },
-  { key: "ash_t", label: "ASH тест — позиция T", suffix: "кг", step: 0.5, def: 14 },
-  { key: "dyn_er", label: "Динамометрия — наружная ротация", suffix: "кг", step: 0.5, def: 12 },
-  { key: "dyn_ir", label: "Динамометрия — внутренняя ротация", suffix: "кг", step: 0.5, def: 16 },
+  { key: "ash_i", tkey: "ash_i", unit: "kg", step: 0.5, def: 20 },
+  { key: "ash_y", tkey: "ash_y", unit: "kg", step: 0.5, def: 16 },
+  { key: "ash_t", tkey: "ash_t", unit: "kg", step: 0.5, def: 14 },
+  { key: "dyn_er", tkey: "er_str", unit: "kg", step: 0.5, def: 12 },
+  { key: "dyn_ir", tkey: "ir_str", unit: "kg", step: 0.5, def: 16 },
 ];
 
 const FUNC_METRICS = [
-  { key: "ckcuest", label: "CKCUEST (касаний за 15 сек)", suffix: "кас.", step: 1, def: 24 },
-  { key: "ybt", label: "Y-Balance композит", suffix: "см", step: 1, def: 90 },
-  { key: "mbt", label: "Бросок мяча 2-3 кг", suffix: "м", step: 0.1, def: 4 },
+  { key: "ckcuest", tkey: "ckcuest", unit: "touch", step: 1, def: 24 },
+  { key: "ybt", tkey: "ybt", unit: "cm", step: 1, def: 90 },
+  { key: "mbt", tkey: "mbt", unit: "m", step: 0.1, def: 4 },
 ];
 
 const SPORT_METRICS = [
-  { key: "breakfall", label: "Амортизация падения (Укэми)", hint: "Способность безопасно падать/страховаться без боли и страха" },
-  { key: "static_push_pull", label: "Статическая тяга/толчок", hint: "Контроль усилия с сопротивлением партнёра в дриллах" },
-  { key: "sparring", label: "Контролируемый спарринг", hint: "Спарринг с тренером без боли и защитных зажимов" },
+  { key: "breakfall", tkey: "breakfall" },
+  { key: "static_push_pull", tkey: "static_pp" },
+  { key: "sparring", tkey: "sparring" },
 ];
 
 function SideInputs({
@@ -63,7 +63,7 @@ function SideInputs({
 }: {
   value: Side;
   onChange: (v: Side) => void;
-  metric: { label: string; suffix: string; step: number };
+  metric: { label: string; suffix: string; step: number; operatedLabel: string; healthyLabel: string };
   testID: string;
 }) {
   return (
@@ -71,7 +71,7 @@ function SideInputs({
       <Text style={styles.metricLabel}>{metric.label}</Text>
       <View style={styles.sideRow}>
         <View style={styles.sideCol}>
-          <Text style={styles.sideCaption}>Оперированная</Text>
+          <Text style={styles.sideCaption}>{metric.operatedLabel}</Text>
           <Stepper
             testID={`${testID}-operated`}
             value={value.operated}
@@ -81,7 +81,7 @@ function SideInputs({
           />
         </View>
         <View style={styles.sideCol}>
-          <Text style={styles.sideCaption}>Здоровая</Text>
+          <Text style={styles.sideCaption}>{metric.healthyLabel}</Text>
           <Stepper
             testID={`${testID}-healthy`}
             value={value.healthy}
@@ -138,6 +138,7 @@ function PctSlider({
 export default function Assessment() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t, tArr, lang } = useI18n();
   const { profileId } = useLocalSearchParams<{ profileId: string }>();
 
   const [step, setStep] = useState(0);
@@ -168,6 +169,7 @@ export default function Assessment() {
     try {
       const payload: any = {
         profile_id: profileId,
+        lang,
         sirsi,
         apprehension_fear: apprehension,
         breakfall: sport.breakfall,
@@ -203,8 +205,8 @@ export default function Assessment() {
           <Ionicons name={step === 0 ? "close" : "chevron-back"} size={26} color={colors.onSurface} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{block.title}</Text>
-          {block.weight ? <Text style={styles.headerWeight}>Вес в скоре: {block.weight}</Text> : null}
+          <Text style={styles.headerTitle}>{block.key === "intro" ? t("wizard.protocol") : t(`block.${block.key}`)}</Text>
+          {block.weight ? <Text style={styles.headerWeight}>{t("wizard.weightInScore", { w: block.weight })}</Text> : null}
         </View>
         <View style={{ width: 26 }} />
       </View>
@@ -230,25 +232,22 @@ export default function Assessment() {
         {block.key === "intro" && (
           <View style={{ gap: spacing.md }}>
             <Card>
-              <Text style={styles.introTitle}>Научно обоснованный протокол</Text>
+              <Text style={styles.introTitle}>{t("wizard.introTitle")}</Text>
               <Text style={styles.introText}>
-                Тест состоит из 5 блоков и рассчитывает индекс готовности RTS (0–100%).
-                Для парных тестов вводите показатели оперированной и здоровой руки —
-                система автоматически считает индекс симметрии (LSI).
+                {t("wizard.introText")}
               </Text>
             </Card>
             {BLOCKS.slice(1).map((b) => (
               <View key={b.key} style={styles.blockRow}>
                 <View style={styles.blockDot} />
-                <Text style={styles.blockRowText}>{b.title}</Text>
+                <Text style={styles.blockRowText}>{t(`block.${b.key}`)}</Text>
                 <Text style={styles.blockRowWeight}>{b.weight}</Text>
               </View>
             ))}
             <View style={styles.disclaimer}>
               <Ionicons name="warning" size={16} color={colors.warning} />
               <Text style={styles.disclaimerText}>
-                Проводите тесты только при отсутствии боли. Результат — скрининг, а не
-                медицинское заключение.
+                {t("wizard.disclaimer")}
               </Text>
             </View>
           </View>
@@ -257,9 +256,9 @@ export default function Assessment() {
         {block.key === "psych" && (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.helper}>
-              Опросник SIRSI: оцените каждое утверждение от 0 до 100%.
+              {t("wizard.psychHelper")}
             </Text>
-            {SIRSI_QUESTIONS.map((q, i) => (
+            {tArr("sirsi").map((q, i) => (
               <Card key={i} style={styles.qCard}>
                 <Text style={styles.qText}>
                   {i + 1}. {q}
@@ -281,13 +280,13 @@ export default function Assessment() {
         {block.key === "rom" && (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.helper}>
-              Введите активную амплитуду движений (в градусах) для обеих рук.
+              {t("wizard.romHelper")}
             </Text>
             {ROM_METRICS.map((m) => (
               <SideInputs
                 key={m.key}
                 testID={m.key}
-                metric={m}
+                metric={{ label: t(`metric.${m.tkey}`), suffix: t(`unit.${m.unit}`), step: m.step, operatedLabel: t("wizard.operated"), healthyLabel: t("wizard.healthy") }}
                 value={sides[m.key]}
                 onChange={(v) => setSide(m.key, v)}
               />
@@ -298,10 +297,9 @@ export default function Assessment() {
               onPress={() => setApprehension((a) => !a)}
             >
               <View style={{ flex: 1 }}>
-                <Text style={styles.toggleTitle}>Apprehension / Relocation Test</Text>
+                <Text style={styles.toggleTitle}>{t("wizard.apprTitle")}</Text>
                 <Text style={styles.toggleHint}>
-                  Есть субъективный страх повторного вывиха при максимальном отведении и
-                  наружной ротации?
+                  {t("wizard.apprHint")}
                 </Text>
               </View>
               <View style={[styles.switch, apprehension && styles.switchOn]}>
@@ -314,13 +312,13 @@ export default function Assessment() {
         {block.key === "strength" && (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.helper}>
-              Изометрическая сила (кг) для оперированной и здоровой руки.
+              {t("wizard.strengthHelper")}
             </Text>
             {STRENGTH_METRICS.map((m) => (
               <SideInputs
                 key={m.key}
                 testID={m.key}
-                metric={m}
+                metric={{ label: t(`metric.${m.tkey}`), suffix: t(`unit.${m.unit}`), step: m.step, operatedLabel: t("wizard.operated"), healthyLabel: t("wizard.healthy") }}
                 value={sides[m.key]}
                 onChange={(v) => setSide(m.key, v)}
               />
@@ -331,13 +329,13 @@ export default function Assessment() {
         {block.key === "functional" && (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.helper}>
-              Функциональные и плиометрические показатели для обеих рук.
+              {t("wizard.funcHelper")}
             </Text>
             {FUNC_METRICS.map((m) => (
               <SideInputs
                 key={m.key}
                 testID={m.key}
-                metric={m}
+                metric={{ label: t(`metric.${m.tkey}`), suffix: t(`unit.${m.unit}`), step: m.step, operatedLabel: t("wizard.operated"), healthyLabel: t("wizard.healthy") }}
                 value={sides[m.key]}
                 onChange={(v) => setSide(m.key, v)}
               />
@@ -348,12 +346,12 @@ export default function Assessment() {
         {block.key === "sport" && (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.helper}>
-              Оцените спорт-специфические навыки от 0 до 100%.
+              {t("wizard.sportHelper")}
             </Text>
             {SPORT_METRICS.map((m) => (
               <Card key={m.key} style={styles.qCard}>
-                <Text style={styles.qText}>{m.label}</Text>
-                <Text style={styles.sportHint}>{m.hint}</Text>
+                <Text style={styles.qText}>{t(`sportm.${m.tkey}_l`)}</Text>
+                <Text style={styles.sportHint}>{t(`sportm.${m.tkey}_h`)}</Text>
                 <PctSlider
                   testID={`sport-${m.key}`}
                   value={sport[m.key]}
@@ -371,10 +369,10 @@ export default function Assessment() {
             testID="wizard-next"
             title={
               step === 0
-                ? "Начать тестирование"
+                ? t("wizard.start")
                 : step === total - 1
-                ? "Рассчитать RTS Score"
-                : "Далее"
+                ? t("wizard.calc")
+                : t("wizard.next")
             }
             onPress={next}
             loading={submitting}
@@ -385,7 +383,7 @@ export default function Assessment() {
       {submitting && (
         <View style={styles.overlay} testID="calc-overlay">
           <ActivityIndicator color={colors.brandPrimary} size="large" />
-          <Text style={styles.overlayText}>Расчёт индекса и AI-плана…</Text>
+          <Text style={styles.overlayText}>{t("wizard.overlay")}</Text>
         </View>
       )}
     </View>

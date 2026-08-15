@@ -99,8 +99,8 @@ export type Assessment = {
   zone: string;
   components: Record<string, number>;
   er_ir_ratio: { operated: number | null; healthy: number | null };
-  radar: { axis: string; value: number }[];
-  weak_links: { name: string; lsi: number | null; deficit: number | null; type: string }[];
+  radar: { axis: string; value: number; key?: string }[];
+  weak_links: { name: string; lsi: number | null; deficit: number | null; type: string; key?: string }[];
   detail_lsi: Record<string, number>;
   roadmap: {
     summary: string;

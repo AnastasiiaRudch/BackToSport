@@ -12,10 +12,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, spacing, radius, fonts, zoneColor, zoneLabel } from "@/src/theme";
+import { colors, spacing, radius, fonts, zoneColor } from "@/src/theme";
 import { Button } from "@/src/components/ui";
 import { ProgressChart, ProgressPoint } from "@/src/components/ProgressChart";
 import { api, Profile, Assessment } from "@/src/api";
+import { useI18n } from "@/src/i18n";
 
 function fmtDate(iso: string) {
   try {
@@ -53,6 +54,7 @@ export default function AthleteDetail() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [items, setItems] = useState<Assessment[]>([]);
@@ -92,6 +94,10 @@ export default function AthleteDetail() {
   }
 
   const zc = zoneColor(profile.latest_zone);
+  const disp = (prefix: string, val: string) => {
+    const r = t(`${prefix}.${val}`);
+    return r === `${prefix}.${val}` ? val : r;
+  };
 
   return (
     <View style={styles.root}>
@@ -113,17 +119,17 @@ export default function AthleteDetail() {
       >
         <View style={styles.summaryCard}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sport}>{profile.sport}</Text>
-            <Text style={styles.surgery}>{profile.surgery_type}</Text>
+            <Text style={styles.sport}>{disp("sport", profile.sport)}</Text>
+            <Text style={styles.surgery}>{disp("surgery", profile.surgery_type)}</Text>
             <View style={styles.metaChips}>
               <View style={styles.metaChip}>
                 <Ionicons name="calendar-outline" size={13} color={colors.onSurfaceSecondary} />
-                <Text style={styles.metaChipText}>{profile.time_since_surgery_weeks} нед.</Text>
+                <Text style={styles.metaChipText}>{profile.time_since_surgery_weeks} {t("common.weeks")}</Text>
               </View>
               <View style={styles.metaChip}>
                 <Ionicons name="hand-left-outline" size={13} color={colors.onSurfaceSecondary} />
                 <Text style={styles.metaChipText}>
-                  Опер.: {profile.operated_arm === "left" ? "левая" : "правая"}
+                  {t("detail.operatedShort")}: {profile.operated_arm === "left" ? t("common.left") : t("common.right")}
                 </Text>
               </View>
             </View>
@@ -137,23 +143,23 @@ export default function AthleteDetail() {
         </View>
 
         <View style={styles.detailsCard}>
-          <InfoRow label="Возраст" value={`${profile.age} лет`} />
-          <InfoRow label="Пол" value={profile.sex === "male" ? "Мужской" : "Женский"} />
-          {profile.weight_category ? <InfoRow label="Вес. категория" value={profile.weight_category} /> : null}
-          <InfoRow label="Доминантная рука" value={profile.dominant_arm === "left" ? "Левая" : "Правая"} />
+          <InfoRow label={t("detail.age")} value={`${profile.age} ${t("common.years")}`} />
+          <InfoRow label={t("detail.sex")} value={profile.sex === "male" ? t("common.male") : t("common.female")} />
+          {profile.weight_category ? <InfoRow label={t("detail.weightCat")} value={profile.weight_category} /> : null}
+          <InfoRow label={t("detail.dominant")} value={profile.dominant_arm === "left" ? t("common.left") : t("common.right")} />
         </View>
 
         <Button
           testID="start-assessment-button"
-          title="Начать оценку RTS"
+          title={t("detail.startBtn")}
           icon={<Ionicons name="play" size={18} color={colors.onBrandPrimary} />}
           onPress={() => router.push(`/assessment/${id}`)}
         />
 
         {items.length >= 2 && (
           <View style={styles.chartCard}>
-            <Text style={styles.sectionTitle}>Динамика RTS Score</Text>
-            <Text style={styles.chartSub}>Прогресс по датам ретестов</Text>
+            <Text style={styles.sectionTitle}>{t("detail.progressTitle")}</Text>
+            <Text style={styles.chartSub}>{t("detail.progressSub")}</Text>
             <View style={{ marginTop: spacing.md }}>
               <ProgressChart
                 width={width - spacing.lg * 2 - spacing.lg * 2}
@@ -170,9 +176,9 @@ export default function AthleteDetail() {
         )}
 
         <View>
-          <Text style={styles.sectionTitle}>История оценок</Text>
+          <Text style={styles.sectionTitle}>{t("detail.historyTitle")}</Text>
           {items.length === 0 ? (
-            <Text style={styles.emptyText}>Тестов ещё не было. Запустите первую оценку.</Text>
+            <Text style={styles.emptyText}>{t("detail.noTests")}</Text>
           ) : (
             <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
               {items.map((it) => {
@@ -188,7 +194,7 @@ export default function AthleteDetail() {
                       <Text style={[styles.histScoreVal, { color: c }]}>{Math.round(it.rts_score)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.histZone, { color: c }]}>{zoneLabel(it.zone)}</Text>
+                      <Text style={[styles.histZone, { color: c }]}>{t(`zone.${it.zone}`)}</Text>
                       <Text style={styles.histDate}>{fmtDate(it.created_at)}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />

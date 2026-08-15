@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, radius, fonts, zoneColor } from "@/src/theme";
 import { api, Profile } from "@/src/api";
 import { useAuth } from "@/src/auth";
+import { useI18n } from "@/src/i18n";
 
 const EMPTY_IMG =
   "https://images.unsplash.com/photo-1630226040750-d934f017f0e4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwc3BvcnRzJTIwcmVoYWIlMjBwaHlzaW8lMjBjbGluaWN8ZW58MHx8fHwxNzg2Nzg2Mjc4fDA&ixlib=rb-4.1.0&q=85";
@@ -24,6 +25,7 @@ export default function AthletesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,10 +64,10 @@ export default function AthletesScreen() {
               {item.name}
             </Text>
             <Text style={styles.cardSub} numberOfLines={1}>
-              {item.sport} · {item.surgery_type}
+              {t(`sport.${item.sport}`) !== `sport.${item.sport}` ? t(`sport.${item.sport}`) : item.sport} · {t(`surgery.${item.surgery_type}`) !== `surgery.${item.surgery_type}` ? t(`surgery.${item.surgery_type}`) : item.surgery_type}
             </Text>
             <Text style={styles.cardMeta}>
-              {item.time_since_surgery_weeks} нед. после операции · {item.assessment_count ?? 0} тест(ов)
+              {item.time_since_surgery_weeks} {t("home.weeksAfter")} · {item.assessment_count ?? 0} {t("home.tests")}
             </Text>
           </View>
         </View>
@@ -87,12 +89,12 @@ export default function AthletesScreen() {
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View>
-          <Text style={styles.hello}>Привет, {user?.name?.split(" ")[0] || "атлет"}</Text>
-          <Text style={styles.title}>Мои атлеты</Text>
+          <Text style={styles.hello}>{t("home.hello", { name: user?.name?.split(" ")[0] || t("role.athlete") })}</Text>
+          <Text style={styles.title}>{t("home.title")}</Text>
         </View>
         <View style={styles.roleBadge}>
           <Text style={styles.roleBadgeText}>
-            {user?.role === "trainer" ? "Тренер" : "Атлет"}
+            {user?.role === "trainer" ? t("role.trainerBadge") : t("role.athleteBadge")}
           </Text>
         </View>
       </View>
@@ -124,9 +126,9 @@ export default function AthletesScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Image source={{ uri: EMPTY_IMG }} style={styles.emptyImg} contentFit="cover" />
-              <Text style={styles.emptyTitle}>Пока нет атлетов</Text>
+              <Text style={styles.emptyTitle}>{t("home.emptyTitle")}</Text>
               <Text style={styles.emptyText}>
-                Добавьте профиль атлета, чтобы начать оценку готовности плеча.
+                {t("home.emptyText")}
               </Text>
             </View>
           }

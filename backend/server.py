@@ -143,6 +143,7 @@ class AssessmentInput(BaseModel):
     breakfall: float = 0
     static_push_pull: float = 0
     sparring: float = 0
+    lang: str = "ru"
 
 
 # ----------------------------- Scoring Engine -----------------------------
@@ -166,26 +167,26 @@ def compute_scores(a: AssessmentInput) -> Dict[str, Any]:
     sirsi_vals = a.sirsi if a.sirsi else []
     sirsi_score = clamp(sum(sirsi_vals) / len(sirsi_vals)) if sirsi_vals else 0.0
 
-    # Block 2: ROM
-    rom_items = {
-        "Сгибание": lsi(d["rom_flexion"]),
-        "Отведение": lsi(d["rom_abduction"]),
-        "Наружная ротация": lsi(d["rom_external_rotation"]),
-        "Внутренняя ротация": lsi(d["rom_internal_rotation"]),
-    }
-    rom_avg = sum(min(100.0, v) for v in rom_items.values()) / len(rom_items)
+    # Block 2: ROM  (key, ru_name, lsi_value)
+    rom_items = [
+        ("flexion", "Сгибание", lsi(d["rom_flexion"])),
+        ("abduction", "Отведение", lsi(d["rom_abduction"])),
+        ("er_rom", "Наружная ротация", lsi(d["rom_external_rotation"])),
+        ("ir_rom", "Внутренняя ротация", lsi(d["rom_internal_rotation"])),
+    ]
+    rom_avg = sum(min(100.0, v) for _, _, v in rom_items) / len(rom_items)
     apprehension_penalty = 25.0 if a.apprehension_fear else 0.0
     rom_score = clamp(rom_avg - apprehension_penalty)
 
     # Block 3: Strength LSI
-    strength_items = {
-        "ASH позиция I": lsi(d["ash_i"]),
-        "ASH позиция Y": lsi(d["ash_y"]),
-        "ASH позиция T": lsi(d["ash_t"]),
-        "Наружная ротация (сила)": lsi(d["dyn_er"]),
-        "Внутренняя ротация (сила)": lsi(d["dyn_ir"]),
-    }
-    strength_score = clamp(sum(min(100.0, v) for v in strength_items.values()) / len(strength_items))
+    strength_items = [
+        ("ash_i", "ASH позиция I", lsi(d["ash_i"])),
+        ("ash_y", "ASH позиция Y", lsi(d["ash_y"])),
+        ("ash_t", "ASH позиция T", lsi(d["ash_t"])),
+        ("er_str", "Наружная ротация (сила)", lsi(d["dyn_er"])),
+        ("ir_str", "Внутренняя ротация (сила)", lsi(d["dyn_ir"])),
+    ]
+    strength_score = clamp(sum(min(100.0, v) for _, _, v in strength_items) / len(strength_items))
 
     def er_ir_ratio(side: str) -> Optional[float]:
         er = float(d["dyn_er"].get(side, 0) or 0)
@@ -202,20 +203,20 @@ def compute_scores(a: AssessmentInput) -> Dict[str, Any]:
     power_score = clamp(min(100.0, mbt_lsi))
     functional_score = clamp((stability_score + power_score) / 2)
 
-    functional_items = {
-        "CKCUEST (стабильность)": ckcuest_lsi,
-        "Y-Balance Test": ybt_lsi,
-        "Бросок мяча (мощность)": mbt_lsi,
-    }
+    functional_items = [
+        ("ckcuest", "CKCUEST (стабильность)", ckcuest_lsi),
+        ("ybt", "Y-Balance Test", ybt_lsi),
+        ("mbt", "Бросок мяча (мощность)", mbt_lsi),
+    ]
 
     # Block 5: Sport specific
     sport_vals = [a.breakfall, a.static_push_pull, a.sparring]
     sport_score = clamp(sum(sport_vals) / len(sport_vals))
-    sport_items = {
-        "Амортизация падения (Укэми)": clamp(a.breakfall),
-        "Статическая тяга/толчок": clamp(a.static_push_pull),
-        "Контролируемый спарринг": clamp(a.sparring),
-    }
+    sport_items = [
+        ("breakfall", "Амортизация падения (Укэми)", clamp(a.breakfall)),
+        ("static_pp", "Статическая тяга/толчок", clamp(a.static_push_pull)),
+        ("sparring", "Контролируемый спарринг", clamp(a.sparring)),
+    ]
 
     # Final RTS Score
     rts = (0.15 * sirsi_score + 0.15 * rom_score + 0.25 * strength_score +
@@ -230,40 +231,40 @@ def compute_scores(a: AssessmentInput) -> Dict[str, Any]:
         zone = "red"
 
     radar = [
-        {"axis": "Психология", "value": round(sirsi_score, 1)},
-        {"axis": "Мобильность", "value": round(rom_score, 1)},
-        {"axis": "Сила", "value": round(strength_score, 1)},
-        {"axis": "Стабильность", "value": round(stability_score, 1)},
-        {"axis": "Мощность", "value": round(power_score, 1)},
+        {"key": "psychology", "axis": "Психология", "value": round(sirsi_score, 1)},
+        {"key": "mobility", "axis": "Мобильность", "value": round(rom_score, 1)},
+        {"key": "strength", "axis": "Сила", "value": round(strength_score, 1)},
+        {"key": "stability", "axis": "Стабильность", "value": round(stability_score, 1)},
+        {"key": "power", "axis": "Мощность", "value": round(power_score, 1)},
     ]
 
     # Weak links: LSI < 90%
     weak_links = []
     all_lsi = {}
-    all_lsi.update(rom_items)
-    all_lsi.update(strength_items)
-    all_lsi.update(functional_items)
-    for name, val in all_lsi.items():
+    for key, name, val in [*rom_items, *strength_items, *functional_items]:
+        all_lsi[key] = {"name": name, "value": round(val, 0)}
         if val < 90:
             weak_links.append({
-                "name": name,
+                "key": key, "name": name,
                 "lsi": round(val, 0),
                 "deficit": round(max(0, 100 - val), 0),
                 "type": "lsi",
             })
     if a.apprehension_fear:
         weak_links.append({
+            "key": "apprehension",
             "name": "Apprehension / страх повторного вывиха",
             "lsi": None, "deficit": None, "type": "clinical",
         })
-    for name, val in sport_items.items():
+    for key, name, val in sport_items:
         if val < 80:
             weak_links.append({
-                "name": name, "lsi": round(val, 0),
+                "key": key, "name": name, "lsi": round(val, 0),
                 "deficit": round(max(0, 100 - val), 0), "type": "sport",
             })
     if sirsi_score < 75:
         weak_links.append({
+            "key": "low_sirsi",
             "name": "Низкая психологическая уверенность (SIRSI)",
             "lsi": round(sirsi_score, 0),
             "deficit": round(max(0, 100 - sirsi_score), 0), "type": "psych",
@@ -288,19 +289,50 @@ def compute_scores(a: AssessmentInput) -> Dict[str, Any]:
         },
         "radar": radar,
         "weak_links": weak_links,
-        "detail_lsi": {k: round(v, 0) for k, v in all_lsi.items()},
+        "detail_lsi": {k: v["value"] for k, v in all_lsi.items()},
     }
 
 
 # ----------------------------- AI Roadmap -----------------------------
-async def generate_roadmap(profile: Dict[str, Any], scores: Dict[str, Any]) -> Dict[str, Any]:
+async def generate_roadmap(profile: Dict[str, Any], scores: Dict[str, Any], lang: str = "ru") -> Dict[str, Any]:
+    fallbacks = {
+        "ru": {
+            "summary": "Продолжайте структурированную реабилитацию, фокусируясь на выявленных слабых звеньях. Обязательно согласуйте нагрузку с лечащим врачом.",
+            "exercises": [
+                {"title": "Изометрическая наружная ротация", "description": "3 подхода по 5 удержаний по 5 сек с эластичной лентой, локоть прижат к корпусу.", "target": "Сила наружной ротации"},
+                {"title": "CKCUEST-прогрессия в планке", "description": "Касания плеч в планке, 3 подхода по 20 сек, контролируемый темп.", "target": "Динамическая стабильность"},
+                {"title": "Ритмическая стабилизация I/Y/T", "description": "3 подхода по 30 сек в позициях I/Y/T для нейромышечного контроля.", "target": "Проприоцепция плеча"},
+            ],
+        },
+        "uk": {
+            "summary": "Продовжуйте структуровану реабілітацію, зосереджуючись на виявлених слабких ланках. Обов'язково узгодьте навантаження з лікарем.",
+            "exercises": [
+                {"title": "Ізометрична зовнішня ротація", "description": "3 підходи по 5 утримань по 5 сек з еластичною стрічкою, лікоть притиснутий до тіла.", "target": "Сила зовнішньої ротації"},
+                {"title": "CKCUEST-прогресія у планці", "description": "Торкання плечей у планці, 3 підходи по 20 сек, контрольований темп.", "target": "Динамічна стабільність"},
+                {"title": "Ритмічна стабілізація I/Y/T", "description": "3 підходи по 30 сек у позиціях I/Y/T для нейром'язового контролю.", "target": "Пропріоцепція плеча"},
+            ],
+        },
+        "en": {
+            "summary": "Continue structured rehabilitation, focusing on the identified weak links. Always confirm loading with your treating physician.",
+            "exercises": [
+                {"title": "Isometric external rotation", "description": "3 sets of 5 holds x 5 sec with a resistance band, elbow tucked to the body.", "target": "External rotation strength"},
+                {"title": "CKCUEST plank progression", "description": "Shoulder taps in a plank, 3 sets of 20 sec, controlled tempo.", "target": "Dynamic stability"},
+                {"title": "Rhythmic stabilization I/Y/T", "description": "3 sets of 30 sec in I/Y/T positions for neuromuscular control.", "target": "Shoulder proprioception"},
+            ],
+        },
+        "he": {
+            "summary": "המשיכו בשיקום מובנה תוך התמקדות בחוליות החלשות שזוהו. חובה לאשר את העומס עם הרופא המטפל.",
+            "exercises": [
+                {"title": "רוטציה חיצונית איזומטרית", "description": "3 סטים של 5 החזקות x 5 שניות עם גומיית התנגדות, מרפק צמוד לגוף.", "target": "כוח רוטציה חיצונית"},
+                {"title": "התקדמות CKCUEST בפלאנק", "description": "נגיעות כתף בפלאנק, 3 סטים של 20 שניות, קצב מבוקר.", "target": "יציבות דינמית"},
+                {"title": "ייצוב קצבי I/Y/T", "description": "3 סטים של 30 שניות בתנוחות I/Y/T לשליטה נוירומוסקולרית.", "target": "פרופריוצפציה של הכתף"},
+            ],
+        },
+    }
+    lang = lang if lang in fallbacks else "ru"
+    base = fallbacks[lang]
     fallback = {
-        "summary": "Продолжайте структурированную реабилитацию, фокусируясь на выявленных слабых звеньях. Обязательно согласуйте нагрузку с лечащим врачом.",
-        "exercises": [
-            {"title": "Изометрическая наружная ротация", "description": "3 подхода по 5 удержаний по 5 сек с эластичной лентой, локоть прижат к корпусу.", "target": "Сила наружной ротации"},
-            {"title": "CKCUEST-прогрессия в планке", "description": "Касания плеч в планке, 3 подхода по 20 сек, контролируемый темп.", "target": "Динамическая стабильность"},
-            {"title": "Ритмическая стабилизация I/Y/T", "description": "3 подхода по 30 сек в позициях I/Y/T для нейромышечного контроля.", "target": "Проприоцепция плеча"},
-        ],
+        **base,
         "retest_weeks": 3,
         "retest_date": (now_utc() + timedelta(weeks=3)).strftime("%d.%m.%Y"),
         "ai_generated": False,
@@ -310,6 +342,8 @@ async def generate_roadmap(profile: Dict[str, Any], scores: Dict[str, Any]) -> D
 
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+        lang_name = {"ru": "русском", "uk": "украинском", "en": "английском", "he": "иврите"}[lang]
 
         weak = ", ".join(
             [f"{w['name']} (дефицит {w['deficit']}%)" if w.get("deficit") is not None else w["name"]
@@ -322,7 +356,8 @@ async def generate_roadmap(profile: Dict[str, Any], scores: Dict[str, Any]) -> D
             "Отвечай СТРОГО в формате JSON без markdown, без пояснений вне JSON. "
             "Структура: {\"summary\": string (2-3 предложения, мотивирующе но клинически строго), "
             "\"exercises\": [{\"title\": string, \"description\": string (подходы/повторы/частота), \"target\": string}] (ровно 3 упражнения, нацеленных на слабые звенья), "
-            "\"retest_weeks\": number (2, 3 или 4)}. Пиши на русском языке."
+            "\"retest_weeks\": number (2, 3 или 4)}. "
+            f"Весь текст внутри JSON (summary, title, description, target) пиши на {lang_name} языке."
         )
         prompt = (
             f"Профиль атлета: спорт {profile.get('sport')}, операция {profile.get('surgery_type')}, "
@@ -517,7 +552,7 @@ async def create_assessment(inp: AssessmentInput, user: Dict[str, Any] = Depends
         raise HTTPException(status_code=404, detail="Профиль не найден")
 
     scores = compute_scores(inp)
-    roadmap = await generate_roadmap(profile, scores)
+    roadmap = await generate_roadmap(profile, scores, inp.lang)
 
     assessment_id = new_id("asmt")
     doc = {

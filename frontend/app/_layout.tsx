@@ -10,6 +10,7 @@ import { useFonts } from "expo-font";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AuthProvider } from "@/src/auth";
+import { I18nProvider } from "@/src/i18n";
 import { fontAssets, colors } from "@/src/theme";
 
 // Disable logbox errors etc so that users can see the app
@@ -37,24 +38,26 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
       <SafeAreaProvider>
         <KeyboardProvider>
-          <AuthProvider>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.surface },
-                animation: "slide_from_right",
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="auth" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="athlete/new" options={{ presentation: "modal" }} />
-              <Stack.Screen name="athlete/[id]" />
-              <Stack.Screen name="assessment/[profileId]" />
-              <Stack.Screen name="results/[id]" />
-            </Stack>
-          </AuthProvider>
+          <I18nProvider>
+            <AuthProvider>
+              <StatusBar style="light" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.surface },
+                  animation: "slide_from_right",
+                }}
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="auth" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="athlete/new" options={{ presentation: "modal" }} />
+                <Stack.Screen name="athlete/[id]" />
+                <Stack.Screen name="assessment/[profileId]" />
+                <Stack.Screen name="results/[id]" />
+              </Stack>
+            </AuthProvider>
+          </I18nProvider>
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

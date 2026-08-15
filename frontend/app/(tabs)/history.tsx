@@ -12,8 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, spacing, radius, fonts, zoneColor, zoneLabel } from "@/src/theme";
+import { colors, spacing, radius, fonts, zoneColor } from "@/src/theme";
 import { api, Assessment } from "@/src/api";
+import { useI18n } from "@/src/i18n";
 
 function fmtDate(iso: string) {
   try {
@@ -27,6 +28,7 @@ function fmtDate(iso: string) {
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useI18n();
   const [items, setItems] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -66,7 +68,7 @@ export default function HistoryScreen() {
           <Text style={styles.sub}>{item.sport}</Text>
           <View style={styles.metaRow}>
             <View style={[styles.zoneTag, { borderColor: zc }]}>
-              <Text style={[styles.zoneTagText, { color: zc }]}>{zoneLabel(item.zone)}</Text>
+              <Text style={[styles.zoneTagText, { color: zc }]}>{t(`zone.${item.zone}`)}</Text>
             </View>
             <Text style={styles.date}>{fmtDate(item.created_at)}</Text>
           </View>
@@ -79,7 +81,7 @@ export default function HistoryScreen() {
   return (
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Text style={styles.title}>История тестов</Text>
+        <Text style={styles.title}>{t("history.title")}</Text>
       </View>
       {loading ? (
         <View style={styles.loader}>
@@ -108,9 +110,9 @@ export default function HistoryScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="clipboard-outline" size={48} color={colors.onSurfaceTertiary} />
-              <Text style={styles.emptyTitle}>Нет проведённых тестов</Text>
+              <Text style={styles.emptyTitle}>{t("history.emptyTitle")}</Text>
               <Text style={styles.emptyText}>
-                Добавьте атлета и запустите оценку RTS.
+                {t("history.emptyText")}
               </Text>
             </View>
           }
