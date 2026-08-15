@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, FlatList } from "react-native";
-import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,7 +10,7 @@ import { colors, spacing, radius, fonts } from "@/src/theme";
 import { ProLocked } from "@/src/components/ui";
 import { useAuth } from "@/src/auth";
 import { useI18n, Lang } from "@/src/i18n";
-import { EXERCISES, LIB_CATEGORIES } from "@/src/exercises";
+import { EXERCISES, LIB_CATEGORIES, CATEGORY_COLORS } from "@/src/exercises";
 
 export default function Library() {
   const insets = useSafeAreaInsets();
@@ -88,7 +88,9 @@ export default function Library() {
                 style={styles.card}
                 onPress={() => router.push(`/exercise/${item.key}`)}
               >
-                <Image source={{ uri: item.image }} style={styles.cardImg} contentFit="cover" />
+                <LinearGradient colors={CATEGORY_COLORS[item.category]} style={styles.cardImg}>
+                  <Ionicons name={item.icon as any} size={28} color={colors.brandPrimary} />
+                </LinearGradient>
                 <View style={styles.cardBody}>
                   <Text style={styles.cardTitle} numberOfLines={2}>{c.title}</Text>
                   <View style={styles.cardMeta}>
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.lg, padding: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
-  cardImg: { width: 64, height: 64, borderRadius: radius.md, backgroundColor: colors.surfaceTertiary },
+  cardImg: { width: 64, height: 64, borderRadius: radius.md, backgroundColor: colors.surfaceTertiary, alignItems: "center", justifyContent: "center" },
   cardBody: { flex: 1, gap: 6 },
   cardTitle: { color: colors.onSurface, fontFamily: fonts.textSemi, fontSize: 15 },
   cardMeta: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },

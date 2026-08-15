@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -8,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { colors, spacing, radius, fonts } from "@/src/theme";
 import { useI18n, Lang } from "@/src/i18n";
-import { EXERCISES } from "@/src/exercises";
+import { EXERCISES, CATEGORY_COLORS } from "@/src/exercises";
 
 export default function ExerciseDetail() {
   const insets = useSafeAreaInsets();
@@ -34,12 +33,15 @@ export default function ExerciseDetail() {
     <View style={styles.root}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Image source={{ uri: ex.image }} style={StyleSheet.absoluteFill} contentFit="cover" />
-          <LinearGradient colors={["rgba(15,17,21,0.3)", "rgba(15,17,21,0.95)", colors.surface]} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={CATEGORY_COLORS[ex.category]} style={StyleSheet.absoluteFill} />
           <Pressable testID="exercise-back" onPress={() => router.back()} style={[styles.back, { top: insets.top + spacing.sm }]} hitSlop={12}>
             <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
           </Pressable>
           <View style={styles.heroText}>
+            <View style={styles.heroIcon}>
+              <Ionicons name={ex.icon as any} size={36} color={colors.brandPrimary} />
+            </View>
+            <Text style={styles.catLabel}>{t(`library.cat_${ex.category}`)}</Text>
             <Text style={styles.title}>{c.title}</Text>
           </View>
         </View>
@@ -68,9 +70,11 @@ export default function ExerciseDetail() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
-  hero: { height: 300, justifyContent: "flex-end" },
+  hero: { height: 260, justifyContent: "flex-end" },
   back: { position: "absolute", left: spacing.lg, width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center" },
-  heroText: { padding: spacing.xl },
+  heroText: { padding: spacing.xl, gap: spacing.sm },
+  heroIcon: { width: 68, height: 68, borderRadius: radius.lg, backgroundColor: "rgba(204,255,0,0.12)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.brandPrimary },
+  catLabel: { color: colors.brandPrimary, fontFamily: fonts.textSemi, fontSize: 12, letterSpacing: 1, textTransform: "uppercase", marginTop: spacing.sm },
   title: { color: colors.onSurface, fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 34 },
   body: { padding: spacing.lg, gap: spacing.lg },
   statsRow: { flexDirection: "row", gap: spacing.md },
