@@ -1,0 +1,183 @@
+{
+  "app_name": "ShoulderReady: Pro RTS Analytics",
+  "personality": "7 Dark-First Utility",
+  "personality_one_liner": "A clinical, high-performance command center for athletes, built on uncompromising precision, deep dark surfaces, and energetic neon accents.",
+  "color": {
+    "surface": "#ffffff",
+    "onSurface": "#0d1117",
+    "surfaceSecondary": "#f0f3f6",
+    "onSurfaceSecondary": "#57606a",
+    "surfaceTertiary": "#e1e4e8",
+    "onSurfaceTertiary": "#24292f",
+    "surfaceInverse": "#0F1115",
+    "onSurfaceInverse": "#FFFFFF",
+    "brand": "#ccff00",
+    "brandPrimary": "#ccff00",
+    "onBrandPrimary": "#000000",
+    "brandSecondary": "#b3cc00",
+    "onBrandSecondary": "#000000",
+    "brandTertiary": "#e6ffb3",
+    "onBrandTertiary": "#1a1f00",
+    "success": "#00E676",
+    "onSuccess": "#000000",
+    "warning": "#FFEA00",
+    "onWarning": "#000000",
+    "error": "#FF1744",
+    "onError": "#FFFFFF",
+    "info": "#00E5FF",
+    "onInfo": "#000000",
+    "border": "#d0d7de",
+    "borderStrong": "#8c959f",
+    "divider": "#e1e4e8",
+    
+    "dark_surface": "#0F1115",
+    "dark_onSurface": "#FFFFFF",
+    "dark_surfaceSecondary": "#1A1D24",
+    "dark_onSurfaceSecondary": "#A0A5B5",
+    "dark_surfaceTertiary": "#252A34",
+    "dark_onSurfaceTertiary": "#8A8F9E",
+    "dark_surfaceInverse": "#FFFFFF",
+    "dark_onSurfaceInverse": "#0F1115",
+    "dark_brand": "#ccff00",
+    "dark_brandPrimary": "#ccff00",
+    "dark_onBrandPrimary": "#000000",
+    "dark_brandSecondary": "#b3cc00",
+    "dark_onBrandSecondary": "#000000",
+    "dark_brandTertiary": "#333C14",
+    "dark_onBrandTertiary": "#ccff00",
+    "dark_success": "#00E676",
+    "dark_onSuccess": "#000000",
+    "dark_warning": "#FFEA00",
+    "dark_onWarning": "#000000",
+    "dark_error": "#FF1744",
+    "dark_onError": "#FFFFFF",
+    "dark_info": "#00E5FF",
+    "dark_onInfo": "#000000",
+    "dark_border": "#2A2F3A",
+    "dark_borderStrong": "#3A4150",
+    "dark_divider": "#1F232B"
+  },
+  "typography": {
+    "displayFontFamily": "Rajdhani",
+    "textFontFamily": "IBM Plex Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Maintain tight, clinical grouping (sm/md) for metric clusters and generous padding (xl/2xl) around major layout blocks. Ensure all tap targets are min 44x44pt.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": 0,
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": false,
+    "do's": [
+      "Use only for subtle modal scrims if absolutely necessary."
+    ],
+    "dont's": [
+      "No frosted glass for dashboard cards, headers, or nav. This is Dark-First Utility; rely on solid surface hexes and dividers for peak contrast."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Auth",
+      "purpose": "Secure entry for athletes and physiotherapists.",
+      "states": {
+        "loading": "Centered neon spinner.",
+        "empty": "N/A",
+        "error": "Inline text below inputs with Retry button."
+      },
+      "layout": "Hero image background with dark scrim (top-to-bottom gradient). Logo mark top-center. Email/Password inputs wrapped in surfaceTertiary blocks. Large brandPrimary 'Login' CTA, followed by Google Auth secondary CTA."
+    },
+    {
+      "name": "Athlete Onboarding & Profiling",
+      "purpose": "Collect baseline clinical data: sport, surgery type, post-op time, dominant arm.",
+      "states": {
+        "loading": "Skeleton of form inputs.",
+        "empty": "N/A",
+        "error": "Error toast, highlighting missing fields."
+      },
+      "layout": "Single-column scrollable form. Segmented controls for Sex/Dominant Arm. Chips (brandTertiary) for Surgery Type. Numeric text inputs for age/time. Sticky CTA at the bottom above safe area."
+    },
+    {
+      "name": "Assessment Flow (5-Blocks)",
+      "purpose": "Step-by-step guided RTS protocol (Psychology, ROM, Strength LSI, Functional, Sport-Specific).",
+      "states": {
+        "loading": "Spinner during save/transition.",
+        "empty": "N/A",
+        "error": "Alert for invalid metric inputs."
+      },
+      "layout": "Paginated wizard layout (horizontal pager dots top). Each block is a dedicated screen to prevent scroll fatigue. SIRSI uses track sliders (0-100%). Dynamometry uses precise numeric text inputs with adjacent +/- steppers. Text-only instructions in surfaceSecondary cards. Sticky 'Next' CTA at bottom."
+    },
+    {
+      "name": "Analytics Dashboard",
+      "purpose": "Display final RTS score, radar chart profile, weak links, and AI action plan.",
+      "states": {
+        "loading": "Skeleton radar chart and metrics.",
+        "empty": "Illustration of clipboard + 'Take your first RTS test'.",
+        "error": "Data fetch failed; Retry CTA."
+      },
+      "layout": "Top section: Large Circular Gauge (color-coded red/yellow/green based on score). Middle: 5-axis Radar chart (surfaceSecondary card). Lower sections: 'Weak Links' list (highlighting LSI < 90%) and 'Roadmap' cards (3 exercises + retest date). Use SportSee/Recharts logic for radar chart."
+    },
+    {
+      "name": "Test History",
+      "purpose": "Log of previous assessments for progress tracking.",
+      "states": {
+        "loading": "List skeleton.",
+        "empty": "No tests logged yet. 'Start Assessment' button.",
+        "error": "List failed to load."
+      },
+      "layout": "Vertical list of cards. Each card shows Date, RTS Score (large font, color-coded), and top-level summary. Tap opens read-only detailed dashboard."
+    }
+  ],
+  "images": {
+    "auth_hero": {
+      "url": "https://images.unsplash.com/photo-1637430308606-86576d8fef3c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwxfHxkYXJrJTIwZ3ltJTIwY3Jvc3NmaXQlMjBhdGhsZXRlJTIwdHJhaW5pbmd8ZW58MHx8fHwxNzg2Nzg2Mjc4fDA&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1711025372958-db48a4fe0ba1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwxfHxuZW9uJTIwZ3JlZW4lMjBmaXRuZXNzJTIwYWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODY3ODYyNzh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark gym background / abstract dark neon backdrop"
+    },
+    "empty_assessment": {
+      "url": "https://images.unsplash.com/photo-1630226040750-d934f017f0e4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwc3BvcnRzJTIwcmVoYWIlMjBwaHlzaW8lMjBjbGluaWN8ZW58MHx8fHwxNzg2Nzg2Mjc4fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Medical sports rehab clinic"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the Dark-First Utility (Personality 7) rules. The app must be in dark mode by default.",
+    "Typography: Use Rajdhani for all metrics, scores, and large headers to give a highly clinical, athletic feel. Use IBM Plex Sans for legibility in instructions and forms.",
+    "Avoid glassmorphism/blur. Depend on solid surface hierarchy (surface, surfaceSecondary, surfaceTertiary) and 1px dividers to separate content. Ensure maximum readability during active gym use.",
+    "Color constraints: Neon Lime (`#ccff00`) is the sole energetic brand accent. Use semantic colors (success/warning/error) strictly for RTS status indicators in the circular gauge and metric readouts.",
+    "Form UX: For the 5-block assessment flow, implement a paginated wizard structure. Do not place all blocks on one long scrolling screen. Use sticky buttons at the bottom.",
+    "Metrics UX: For quantitative tests (ROM, Dynamometry), use explicit text inputs with +/- steppers rather than sliders for precision. Reserve sliders exclusively for subjective 0-100% scores (SIRSI questionnaire).",
+    "Data Viz: Utilize Recharts (or similar) to construct the Circular Gauge and the 5-axis Radar chart (Psychology, Mobility, Strength, Stability, Power) as requested in the dashboard layout."
+  ]
+}
