@@ -6,16 +6,20 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 
 import { colors, spacing, radius, fonts, zoneColor, zoneLabel } from "@/src/theme";
 import { Gauge } from "@/src/components/Gauge";
 import { Radar } from "@/src/components/Radar";
-import { Card } from "@/src/components/ui";
-import { api, Assessment } from "@/src/api";
+import { Button, Card } from "@/src/components/ui";
+import { api, Assessment, Profile } from "@/src/api";
+import { generateReportHtml } from "@/src/report";
 
 const ZONE_ADVICE: Record<string, string> = {
   green: "Полный допуск к контакту и соревнованиям.",
@@ -36,19 +40,53 @@ export default function Results() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [a, setA] = useState<Assessment | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sharing, setSharing] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const res = await api.get<{ assessment: Assessment }>(`/assessments/${id}`);
         setA(res.assessment);
+        try {
+          const pr = await api.get<{ profile: Profile }>(`/profiles/${res.assessment.profile_id}`);
+          setProfile(pr.profile);
+        } catch {}
       } catch {}
       finally {
         setLoading(false);
       }
     })();
   }, [id]);
+
+  const shareReport = async () => {
+    if (!a) return;
+    setShareMsg(null);
+    setSharing(true);
+    try {
+      if (Platform.OS === "web") {
+        setShareMsg("Экспорт PDF доступен в мобильном приложении (Expo Go / сборка).");
+        return;
+      }
+      const html = generateReportHtml(a, profile);
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Отчёт RTS для врача",
+          UTI: "com.adobe.pdf",
+        });
+      } else {
+        setShareMsg("Отправка недоступна на этом устройстве.");
+      }
+    } catch (e) {
+      setShareMsg("Не удалось сформировать отчёт. Попробуйте ещё раз.");
+    } finally {
+      setSharing(false);
+    }
+  };
 
   if (loading || !a) {
     return (
@@ -73,8 +111,8 @@ export default function Results() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {a.profile_name}
         </Text>
-        <Pressable testID="results-home" onPress={() => router.replace("/(tabs)")} hitSlop={12}>
-          <Ionicons name="home-outline" size={22} color={colors.onSurface} />
+        <Pressable testID="results-share-header" onPress={shareReport} hitSlop={12} disabled={sharing}>
+          <Ionicons name="share-outline" size={22} color={colors.brandPrimary} />
         </Pressable>
       </View>
 
@@ -88,6 +126,16 @@ export default function Results() {
           <View style={[styles.adviceBox, { borderColor: zc }]}>
             <Text style={[styles.adviceText, { color: zc }]}>{ZONE_ADVICE[a.zone]}</Text>
           </View>
+          <Button
+            testID="share-report-button"
+            title="Отчёт для врача (PDF)"
+            variant="secondary"
+            loading={sharing}
+            onPress={shareReport}
+            icon={<Ionicons name="document-text-outline" size={18} color={colors.onSurface} />}
+            style={{ width: "100%" }}
+          />
+          {shareMsg ? <Text style={styles.shareMsg} testID="share-msg">{shareMsg}</Text> : null}
         </Card>
 
         {/* Radar */}
@@ -224,6 +272,7 @@ const styles = StyleSheet.create({
   gaugeCard: { alignItems: "center", gap: spacing.md },
   adviceBox: { borderWidth: 1, borderRadius: radius.md, padding: spacing.md, width: "100%" },
   adviceText: { fontFamily: fonts.textSemi, fontSize: 14, textAlign: "center" },
+  shareMsg: { color: colors.onSurfaceSecondary, fontFamily: fonts.textRegular, fontSize: 12, textAlign: "center" },
   sectionTitle: { color: colors.onSurface, fontFamily: fonts.displaySemi, fontSize: 19 },
   compRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
   compLabel: { color: colors.onSurfaceSecondary, fontFamily: fonts.textMedium, fontSize: 13 },
