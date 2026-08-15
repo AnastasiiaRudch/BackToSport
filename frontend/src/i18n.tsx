@@ -7,7 +7,7 @@ export const LANG_KEY = "app_lang";
 export const RTL_LANGS: Lang[] = ["he"];
 
 export const LANG_META: { key: Lang; label: string; flag: string }[] = [
-  { key: "ru", label: "Русский", flag: "🇷🇺" },
+  { key: "ru", label: "Русский", flag: "🌐" },
   { key: "uk", label: "Українська", flag: "🇺🇦" },
   { key: "en", label: "English", flag: "🇬🇧" },
   { key: "he", label: "עברית", flag: "🇮🇱" },
