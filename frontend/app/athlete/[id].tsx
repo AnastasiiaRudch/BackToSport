@@ -157,6 +157,16 @@ export default function AthleteDetail() {
         />
 
         {items.length >= 2 && (
+          <Button
+            testID="compare-tests-button"
+            title={t("compare.open")}
+            variant="secondary"
+            icon={<Ionicons name="git-compare-outline" size={18} color={colors.onSurface} />}
+            onPress={() => router.push(`/compare/${id}`)}
+          />
+        )}
+
+        {items.length >= 2 && (
           <View style={styles.chartCard}>
             <Text style={styles.sectionTitle}>{t("detail.progressTitle")}</Text>
             <Text style={styles.chartSub}>{t("detail.progressSub")}</Text>

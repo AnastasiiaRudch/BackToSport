@@ -54,6 +54,7 @@ export default function RootLayout() {
                 <Stack.Screen name="athlete/new" options={{ presentation: "modal" }} />
                 <Stack.Screen name="athlete/[id]" />
                 <Stack.Screen name="assessment/[profileId]" />
+                <Stack.Screen name="compare/[profileId]" />
                 <Stack.Screen name="results/[id]" />
               </Stack>
             </AuthProvider>
